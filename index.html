@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="הוויות">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#FAF8F6" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#15141A" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#1C1829" media="(prefers-color-scheme: dark)">
 <title>הוויות</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300..900&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&display=swap" rel="stylesheet">
@@ -38,35 +38,35 @@
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #15141A;
-      --ink: #EFEAF0;
-      --muted: #9B95A3;
-      --line: rgba(239, 234, 240, .16);
-      --bar: rgba(21, 20, 26, .92);
-      --field: #1E1D25;
-      --on-pastel: #EFEAF0;
-      --p1: #3C2B31;
-      --p2: #3C3128;
-      --p3: #383420;
-      --p4: #26322A;
-      --p5: #23303C;
-      --p6: #2E2A3E;
+      --bg: #1C1829;
+      --ink: #EDE8F2;
+      --muted: #9890A2;
+      --line: rgba(237, 232, 242, .15);
+      --bar: rgba(28, 24, 41, .92);
+      --field: #261E38;
+      --on-pastel: #2A1E3A;
+      --p1: #EAB8C4;
+      --p2: #EAC8A8;
+      --p3: #E0D8A0;
+      --p4: #B8D4B0;
+      --p5: #AACCDE;
+      --p6: #C4B8DE;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #15141A;
-    --ink: #EFEAF0;
-    --muted: #9B95A3;
-    --line: rgba(239, 234, 240, .16);
-    --bar: rgba(21, 20, 26, .92);
-    --field: #1E1D25;
-    --on-pastel: #EFEAF0;
-    --p1: #3C2B31;
-    --p2: #3C3128;
-    --p3: #383420;
-    --p4: #26322A;
-    --p5: #23303C;
-    --p6: #2E2A3E;
+    --bg: #1C1829;
+    --ink: #EDE8F2;
+    --muted: #9890A2;
+    --line: rgba(237, 232, 242, .15);
+    --bar: rgba(28, 24, 41, .92);
+    --field: #261E38;
+    --on-pastel: #2A1E3A;
+    --p1: #EAB8C4;
+    --p2: #EAC8A8;
+    --p3: #E0D8A0;
+    --p4: #B8D4B0;
+    --p5: #AACCDE;
+    --p6: #C4B8DE;
   }
 
   *, *::before, *::after { box-sizing: inherit; }
@@ -206,59 +206,87 @@
   .quiet-link { color: var(--muted); text-decoration: underline; text-underline-offset: .25em; min-height: 2.75rem; padding: 0 .2rem; }
   .row { display: flex; align-items: center; gap: 1rem; }
 
-  /* today */
-  .today-page { width: 100%; max-width: 34rem; margin: auto; padding: 1rem 1.35rem 1.5rem; }
-  .i-am { font-size: .98rem; color: var(--muted); margin: 0 0 .8rem; }
-  .cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .7rem; }
-  .card {
-    display: block;
-    width: 100%;
+  /* today — orbital layout */
+  .today-page {
+    width: 100%; max-width: 34rem; margin: auto;
+    padding: 1rem 1.35rem 1.5rem;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .i-am { font-size: .98rem; color: var(--muted); margin: 0 0 .4rem; align-self: flex-start; }
+
+  .orbit {
+    --rs: clamp(78px, 21vw, 93px);
+    --cs: clamp(96px, 27vw, 116px);
+    --g: clamp(.38rem, 1.5vw, .55rem);
+    display: grid;
+    grid-template-columns: var(--rs) var(--cs) var(--rs);
+    grid-template-rows: var(--rs) var(--cs) var(--rs);
+    gap: var(--g);
+    margin: .3rem auto 1rem;
+  }
+  .orb {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border-radius: 50%;
     background: var(--tint);
     color: var(--on-pastel);
-    border-radius: 22px;
-    padding: 1rem 1.2rem 1.1rem;
-    text-align: right;
+    border: none; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity .12s ease;
   }
-  .word {
-    display: block;
-    font-family: var(--display);
-    font-weight: 500;
-    font-size: clamp(1.9rem, 8vw, 2.5rem);
-    line-height: 1.2;
+  .orb:active { opacity: .68; }
+  .orb-center {
+    grid-column: 2; grid-row: 2;
+    width: var(--cs); height: var(--cs);
+    animation: orb-breathe 4.5s ease-in-out 0.8s infinite;
   }
-  .note-text, .note-hint {
-    display: block;
-    margin: .25rem 0 0;
-    font-size: .98rem;
-    line-height: 1.55;
-    white-space: pre-wrap;
+  .orb-ring { width: var(--rs); height: var(--rs); }
+  .orb-top    { grid-column: 2; grid-row: 1; animation: orb-pulse 5.3s ease-in-out 0.8s infinite; }
+  .orb-right  { grid-column: 3; grid-row: 2; animation: orb-pulse 5.3s ease-in-out 2.2s infinite; }
+  .orb-bottom { grid-column: 2; grid-row: 3; animation: orb-pulse 5.3s ease-in-out 3.6s infinite; }
+  .orb-left   { grid-column: 1; grid-row: 2; animation: orb-pulse 5.3s ease-in-out 5.0s infinite; }
+  .orb-active { outline: 2.5px solid var(--ink); outline-offset: 3px; }
+  .orb-word {
+    font-family: var(--display); font-weight: 500;
+    font-size: clamp(.76rem, 2.4vw, .9rem);
+    line-height: 1.2; padding: 0 .3rem;
+    display: block; text-align: center;
   }
-  .note-hint { font-size: .9rem; opacity: .5; }
+  .orb-center .orb-word { font-size: clamp(.9rem, 2.8vw, 1.06rem); }
+  .orb-dot {
+    display: block; width: 5px; height: 5px;
+    border-radius: 50%; background: currentColor;
+    opacity: .45; margin-top: .28rem;
+  }
+  @keyframes orb-breathe {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.08); }
+  }
+  @keyframes orb-pulse {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.05); }
+  }
+
+  /* note editing zone (below orbit) */
+  .note-zone { width: 100%; max-width: 26rem; margin: 0 0 .5rem; animation: arrive .3s ease both; }
+  .note-for { font-size: .93rem; color: var(--muted); margin: 0 0 .4rem; }
+  .note-for strong { color: var(--ink); font-weight: 600; }
   .note-input {
-    display: block;
-    width: 100%;
-    margin: .5rem 0 .7rem;
-    padding: .7rem .8rem;
-    font-size: 1rem;
-    line-height: 1.5;
-    background: var(--field);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    direction: rtl;
-    text-align: right;
-    resize: vertical;
+    display: block; width: 100%;
+    margin: 0 0 .7rem; padding: .7rem .8rem;
+    font-size: 1rem; line-height: 1.5;
+    background: var(--field); border: 1px solid var(--line);
+    border-radius: 14px; direction: rtl; text-align: right; resize: vertical;
   }
   .note-actions { display: flex; gap: 1rem; align-items: center; }
   .note-actions .primary { padding: .55rem 1.2rem; min-height: 2.7rem; font-size: .98rem; }
-  .day { font-size: .95rem; color: var(--muted); margin: 1.1rem 0 0; text-align: center; }
+  .day { font-size: .95rem; color: var(--muted); margin: .5rem 0 0; text-align: center; width: 100%; }
   .show-foot {
-    display: flex;
-    gap: 1.6rem;
-    justify-content: center;
-    padding: .9rem 0 .2rem;
+    display: flex; gap: 1.6rem; justify-content: center;
+    padding: .9rem 0 .2rem; width: 100%;
     transition: opacity .4s ease;
   }
-  .card, .being, .choice { animation: arrive .5s ease both; animation-delay: calc(var(--i, 0) * 60ms); }
+  .orbit, .being, .choice { animation: arrive .5s ease both; animation-delay: calc(var(--i, 0) * 60ms); }
   @keyframes arrive { from { opacity: 0; transform: translateY(.4rem); } to { opacity: 1; transform: none; } }
 
   body.quiet .top, body.quiet .show-foot { opacity: 0; pointer-events: none; }
@@ -344,7 +372,7 @@
   .nojs { max-width: 34rem; margin: 0 auto; padding: 1.5rem 1.35rem; }
 
   @media (prefers-reduced-motion: reduce) {
-    .card, .being, .choice { animation: none; }
+    .orbit, .orb-center, .orb-ring, .being, .choice { animation: none; }
     * { transition: none !important; }
   }
 </style>
@@ -870,35 +898,48 @@ window.Havayot = {
   function renderShow(today) {
     var key = dayKey();
     var notes = today.notes || {};
-    var cards = today.beings.map(function (b, i) {
+    var ORBIT = ["center", "top", "right", "bottom", "left"];
+
+    var orbs = today.beings.map(function (b, i) {
       var note = notes[b] || "";
-      var style = '--tint:' + tintAt(i) + ';--i:' + i;
-      if (state.noteFor === b) {
-        return '<li><div class="card" style="' + style + '"><span class="word">' + esc(b) + "</span>" +
-          '<textarea class="note-input" rows="4" maxlength="2000" placeholder="' + esc(t().placeholder) + '">' + esc(note) + "</textarea>" +
-          '<div class="note-actions"><button type="button" class="primary" data-act="note-save">' + esc(t().saveNote) + "</button>" +
-          '<button type="button" class="quiet-link" data-act="note-cancel">ביטול</button></div></div></li>';
-      }
-      return '<li><button type="button" class="card" style="' + style + '" data-act="note-open" data-word="' + esc(b) +
-        '" aria-label="' + esc(t().writeOn + b) + '"><span class="word">' + esc(b) + "</span>" +
-        (note ? '<span class="note-text">' + esc(note) + "</span>"
-              : '<span class="note-hint">' + esc(t().hint) + "</span>") +
-        "</button></li>";
+      var pos = ORBIT[i] || "ring";
+      var cls = "orb " + (i === 0 ? "orb-center" : "orb-ring orb-" + pos) + (state.noteFor === b ? " orb-active" : "");
+      return '<button type="button" class="' + cls + '" style="--tint:' + tintAt(i) + ';--i:' + i + '" ' +
+        'data-act="note-open" data-word="' + esc(b) + '" aria-label="' + esc(t().writeOn + b) + '">' +
+        '<span class="orb-word">' + esc(b) + '</span>' +
+        (note ? '<span class="orb-dot" aria-hidden="true"></span>' : '') +
+        '</button>';
     }).join("");
 
-    app.innerHTML = '<section class="today-page"><p class="i-am">היום אני</p>' +
-      '<ul class="cards">' + cards + "</ul>" +
-      '<p class="day">' + esc(fmt(key, { weekday: "long", day: "numeric", month: "long" })) + "</p>" +
-      '<div class="show-foot">' +
-      '<button type="button" class="quiet-link" data-act="edit">' + esc(t().edit) + "</button>" +
-      '<button type="button" class="quiet-link" data-act="quiet">מסך נקי</button>' +
-      "</div></section>";
+    var noteHtml = "";
+    if (state.noteFor) {
+      var editNote = notes[state.noteFor] || "";
+      noteHtml = '<div class="note-zone">' +
+        '<p class="note-for">מילים על <strong>' + esc(state.noteFor) + '</strong></p>' +
+        '<textarea class="note-input" rows="3" maxlength="2000" placeholder="' + esc(t().placeholder) + '">' + esc(editNote) + '</textarea>' +
+        '<div class="note-actions">' +
+        '<button type="button" class="primary" data-act="note-save">' + esc(t().saveNote) + '</button>' +
+        '<button type="button" class="quiet-link" data-act="note-cancel">ביטול</button>' +
+        '</div></div>';
+    }
 
-    var box = app.querySelector(".note-input");
-    if (box) {
-      box.focus();
-      try { box.setSelectionRange(box.value.length, box.value.length); } catch (e) { /* older browsers */ }
-      box.scrollIntoView({ block: "center" });
+    app.innerHTML = '<section class="today-page">' +
+      '<p class="i-am">היום אני</p>' +
+      '<div class="orbit">' + orbs + '</div>' +
+      noteHtml +
+      '<p class="day">' + esc(fmt(key, { weekday: "long", day: "numeric", month: "long" })) + '</p>' +
+      '<div class="show-foot">' +
+      '<button type="button" class="quiet-link" data-act="edit">' + esc(t().edit) + '</button>' +
+      '<button type="button" class="quiet-link" data-act="quiet">מסך נקי</button>' +
+      '</div></section>';
+
+    if (state.noteFor) {
+      var box = app.querySelector(".note-input");
+      if (box) {
+        box.focus();
+        try { box.setSelectionRange(box.value.length, box.value.length); } catch (e) { /* older browsers */ }
+        box.scrollIntoView({ block: "center" });
+      }
     }
   }
 
