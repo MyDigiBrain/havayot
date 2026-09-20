@@ -295,6 +295,32 @@
   .settings .choices { flex-direction: row; flex-wrap: wrap; }
   .settings .choice { width: auto; flex: 1 1 9rem; text-align: center; }
 
+  /* sign in */
+  .gate .nav { display: none; }
+  .auth { margin: auto; }
+  .input {
+    display: block;
+    width: 100%;
+    margin: 0 0 .7rem;
+    padding: .85rem 1rem;
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--field);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    direction: rtl;
+    text-align: right;
+  }
+  .input:focus { outline: 2px solid var(--p5); outline-offset: 1px; }
+  .auth .primary { width: 100%; }
+  .auth-links { display: flex; flex-wrap: wrap; gap: 1.2rem; justify-content: center; margin: 1.1rem 0 0; }
+  .msg { margin: 0 0 .9rem; padding: .7rem .9rem; border-radius: 14px; background: var(--p1); color: var(--on-pastel); font-size: .95rem; }
+  .msg.good { background: var(--p4); }
+  .account { background: var(--field); border: 1px solid var(--line); border-radius: 18px; padding: .9rem 1.1rem 1rem; }
+  .account p { margin: 0 0 .6rem; font-size: .95rem; }
+  .account .who { font-weight: 600; }
+  .spinner { margin: auto; text-align: center; color: var(--muted); }
+
   .nojs { max-width: 34rem; margin: 0 auto; padding: 1.5rem 1.35rem; }
 
   @media (prefers-reduced-motion: reduce) {
@@ -323,6 +349,34 @@
 </noscript>
 
 <button type="button" class="wake" aria-label="הצג שוב את התפריט"></button>
+
+<script>
+/* ===========================================================================
+   הגדרות החיבור לחשבון (Firebase)
+
+   כל עוד השורות האלה נשארות כמו שהן, היישומון עובד מקומית: בלי חשבון,
+   והיומן נשמר בדפדפן. כדי להפעיל כניסה עם מייל וסנכרון בין מכשירים,
+   מדביקים כאן את הבלוק שמתקבל ב Firebase, במסך Project settings, אפליקציית Web.
+   אין צורך להסתיר את המפתח הזה, הוא נועד להיות גלוי; מה שמגן על הנתונים
+   הם כללי הגישה ב Firestore, שמופיעים בקובץ README.
+   =========================================================================== */
+var FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBX26FRJywsEM9k7ait89OXwFQp7hkvlDw",
+  authDomain: "being-f25bb.firebaseapp.com",
+  projectId: "being-f25bb",
+  storageBucket: "being-f25bb.firebasestorage.app",
+  messagingSenderId: "689207085916",
+  appId: "1:689207085916:web:eea06e7cd071904e960f99"
+};
+
+window.Havayot = {
+  config: FIREBASE_CONFIG,
+  configured: !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId),
+  api: null,
+  onUser: function () {}, onDays: function () {}, onSettings: function () {},
+  onProblem: function () {}, onNotice: function () {}, onDown: function () {}
+};
+</script>
 
 <script>
 (function () {
@@ -364,6 +418,9 @@
     }
   };
 
+  var cloud = window.Havayot;              // the bridge; the Firebase module fills cloud.api
+  var WANTS_CLOUD = cloud && cloud.configured;
+
   var MAX = 5;
   var BREATH = 20;  // "נושם" / "נושמת" — the same position in both lists, kept as the first by default
   var DAY_STARTS_AT = 4; // a new day begins at 04:00, so a late night still belongs to the day before
@@ -380,7 +437,13 @@
     picks: [null, null, null, null, null], // one slot per tone, so each of the five gets its own
     editing: false,
     noteFor: null,
-    view: "today"
+    view: "today",
+    user: null,          // the signed-in account, when there is one
+    authKnown: !WANTS_CLOUD,
+    cloudDown: false,
+    authMode: "in",      // "in" | "up"
+    busy: false,
+    msg: null            // { text: "", good: false }
   };
 
   /* ---------- helpers ---------- */
@@ -425,7 +488,12 @@
   }
 
   /* ---------- the log and the settings live in this browser ---------- */
+  function loadLocalSettings() {
+    try {
+    } catch (e) { /* private browsing, or storage turned off */ }
+  }
   function load() {
+    loadLocalSettings();
     try {
       var raw = localStorage.getItem(K_DAYS);
       if (raw) {
@@ -441,11 +509,16 @@
       if (set && (set.gender === "m" || set.gender === "f")) state.gender = set.gender;
     } catch (e) { /* private browsing, or storage turned off */ }
   }
-  function saveDays() {
+  function mirror() {
     try { localStorage.setItem(K_DAYS, JSON.stringify(state.days)); } catch (e) { /* nothing to do */ }
+  }
+  function saveDays(key) {
+    mirror();
+    if (state.user && cloud.api && key && state.days[key]) cloud.api.putDay(key, state.days[key]);
   }
   function saveSettings() {
     try { localStorage.setItem(K_SET, JSON.stringify({ gender: state.gender })); } catch (e) { /* nothing to do */ }
+    if (state.user && cloud.api) cloud.api.putSettings({ gender: state.gender });
   }
 
   /* ---------- actions ---------- */
@@ -469,13 +542,14 @@
         return out;
       });
       day.notes = notes;
+      if (state.user && cloud.api) cloud.api.putDay(k, day);
     });
     state.picks = state.picks.map(function (w) {
       if (!w) return null;
       var i = a.indexOf(w);
       return i >= 0 ? b[i] : w;
     });
-    saveDays();
+    mirror();
   }
 
   function togglePick(name) {
@@ -495,7 +569,7 @@
     var prev = state.days[key], kept = {};
     if (prev && prev.notes) list.forEach(function (b) { if (prev.notes[b]) kept[b] = prev.notes[b]; });
     state.days[key] = { beings: list, notes: kept, savedAt: new Date().toISOString() };
-    saveDays();
+    saveDays(key);
     state.picks = emptyPicks();
     state.editing = false;
     render();
@@ -529,9 +603,98 @@
     if (text.trim()) today.notes[being] = text;
     else delete today.notes[being];
     today.savedAt = new Date().toISOString();
-    saveDays();
+    saveDays(key);
     state.noteFor = null;
     render();
+  }
+
+  /* ---------- what the Firebase module reports back ---------- */
+  cloud.onUser = function (user) {
+    var was = state.user && state.user.uid;
+    state.user = user;
+    state.authKnown = true;
+    state.busy = false;
+    state.view = "today";     // signing in or out always lands on today
+    if (!user) {
+      state.days = {};
+      state.gender = null;
+      state.picks = emptyPicks();
+      loadLocalSettings();          // the wording stays, the days do not
+    } else if (user.uid !== was) {
+      state.msg = null;
+    }
+    render(true);
+  };
+  cloud.onDays = function (remote, firstTime) {
+    var merged = {};
+    Object.keys(remote).forEach(function (k) {
+      var e = normalize(remote[k]);
+      if (e && DATE_RE.test(k)) merged[k] = e;
+    });
+    if (firstTime) {                // days written before signing in move up to the account
+      Object.keys(state.days).forEach(function (k) {
+        var mine = state.days[k], there = merged[k];
+        if (!there || (mine.savedAt || "") > (there.savedAt || "")) {
+          merged[k] = mine;
+          if (cloud.api) cloud.api.putDay(k, mine);
+        }
+      });
+    }
+    state.days = merged;
+    mirror();
+    render(true);
+  };
+  cloud.onSettings = function (set, firstTime) {
+    if (set && (set.gender === "m" || set.gender === "f")) {
+      state.gender = set.gender;
+      try { localStorage.setItem(K_SET, JSON.stringify({ gender: state.gender })); } catch (e) { /* nothing to do */ }
+    } else if (firstTime && state.gender && cloud.api) {
+      cloud.api.putSettings({ gender: state.gender });
+    }
+    render(true);
+  };
+  cloud.onProblem = function (text) {
+    state.busy = false;
+    state.msg = { text: text, good: false };
+    render(true);
+  };
+  cloud.onNotice = function (text) {
+    state.busy = false;
+    state.msg = { text: text, good: true };
+    render(true);
+  };
+  cloud.onDown = function () {      // the module could not load or start
+    state.cloudDown = true;
+    state.authKnown = true;
+    render(true);
+  };
+
+  /* ---------- account actions ---------- */
+  function authSubmit() {
+    var mail = app.querySelector("#mail"), pass = app.querySelector("#pass");
+    if (!mail || !pass || !cloud.api) return;
+    var email = mail.value.trim(), password = pass.value;
+    if (!email || !password) {
+      state.msg = { text: "צריך למלא מייל וסיסמה.", good: false };
+      return render(true);
+    }
+    state.busy = true;
+    state.msg = null;
+    render(true);
+    if (state.authMode === "up") cloud.api.signUp(email, password);
+    else cloud.api.signIn(email, password);
+  }
+  function authReset() {
+    var mail = app.querySelector("#mail");
+    if (!mail || !cloud.api) return;
+    var email = mail.value.trim();
+    if (!email) {
+      state.msg = { text: "מלא קודם את כתובת המייל, ואז לחץ שוב.", good: false };
+      return render(true);
+    }
+    state.busy = true;
+    render(true);
+    cloud.api.reset(email);
   }
 
   /* ---------- rendering ---------- */
@@ -543,11 +706,16 @@
       else b.removeAttribute("aria-current");
     });
 
+    var needsAuth = WANTS_CLOUD && !state.cloudDown;
+    document.body.classList.toggle("gate", (needsAuth && !state.user) || !state.gender);
+
     var today = state.days[dayKey()];
     var key;
-    if (!state.gender) key = "setup:";
-    else if (state.view === "settings") key = "settings:" + state.gender;
-    else if (state.view === "log") key = "log:" + state.gender + JSON.stringify(state.days);
+    if (needsAuth && !state.authKnown) key = "wait:";
+    else if (needsAuth && !state.user) key = "auth:" + state.authMode + state.busy + JSON.stringify(state.msg);
+    else if (!state.gender) key = "setup:";
+    else if (state.view === "settings") key = "settings:" + state.gender + (state.user ? state.user.email : "-") + state.cloudDown;
+    else if (state.view === "log") key = "log:" + state.gender + (state.user ? "u" : "-") + JSON.stringify(state.days);
     else if (today && !state.editing) key = "show:" + state.gender + today.beings.join("|") + JSON.stringify(today.notes) + state.noteFor;
     else key = "choose:" + state.gender + state.editing;
 
@@ -556,7 +724,9 @@
     if (!force && key === screenKey) { if (key.indexOf("choose:") === 0) updateChoose(); return; }
     screenKey = key;
 
-    if (key.indexOf("setup:") === 0) renderSetup();
+    if (key.indexOf("wait:") === 0) app.innerHTML = '<section class="page spinner"><p>רגע, מתחבר לחשבון...</p></section>';
+    else if (key.indexOf("auth:") === 0) renderAuth();
+    else if (key.indexOf("setup:") === 0) renderSetup();
     else if (key.indexOf("settings:") === 0) renderSettings();
     else if (key.indexOf("log:") === 0) renderLog();
     else if (key.indexOf("show:") === 0) renderShow(today);
@@ -571,6 +741,31 @@
       "</div>";
   }
 
+  function renderAuth() {
+    var up = state.authMode === "up";
+    var mail = "", pass = "";
+    var oldMail = app.querySelector("#mail"), oldPass = app.querySelector("#pass");
+    if (oldMail) mail = oldMail.value;
+    if (oldPass) pass = oldPass.value;
+
+    app.innerHTML = '<section class="page auth"><h1>' + (up ? "פתיחת חשבון" : "כניסה") + "</h1>" +
+      '<p class="lede">' + (up
+        ? "חשבון חדש שומר את הבחירות והמילים שלך, ומסנכרן אותן בין כל המכשירים."
+        : "הבחירות והמילים שלך נשמרות בחשבון ונפתחות מכל מכשיר.") + "</p>" +
+      (state.msg ? '<p class="msg' + (state.msg.good ? " good" : "") + '">' + esc(state.msg.text) + "</p>" : "") +
+      '<input class="input" id="mail" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="כתובת מייל" value="' + esc(mail) + '">' +
+      '<input class="input" id="pass" type="password" autocomplete="' + (up ? "new-password" : "current-password") + '" placeholder="סיסמה" value="' + esc(pass) + '">' +
+      '<button type="button" class="primary" data-act="auth-go"' + (state.busy ? " disabled" : "") + ">" +
+      (state.busy ? "רגע..." : (up ? "פתח חשבון" : "כניסה")) + "</button>" +
+      '<div class="auth-links">' +
+      '<button type="button" class="quiet-link" data-act="auth-mode">' + (up ? "כבר יש לי חשבון" : "אין לי חשבון עדיין") + "</button>" +
+      (up ? "" : '<button type="button" class="quiet-link" data-act="auth-reset">שכחתי סיסמה</button>') +
+      "</div></section>";
+
+    var focusOn = app.querySelector(mail ? "#pass" : "#mail");
+    if (focusOn && !state.busy) focusOn.focus();
+  }
+
   function renderSetup() {
     app.innerHTML = '<section class="page setup"><h1>רגע לפני שמתחילים</h1>' +
       '<p class="lede">באיזו לשון לפנות אליך? אפשר לשנות את זה בכל רגע במסך ההגדרות.</p>' +
@@ -578,11 +773,23 @@
   }
 
   function renderSettings() {
+    var account = "";
+    if (state.user) {
+      account = "<h2>החשבון שלך</h2><div class=\"account\">" +
+        '<p class="who">' + esc(state.user.email || "מחובר") + "</p>" +
+        '<button type="button" class="quiet-link" data-act="sign-out">יציאה מהחשבון</button></div>';
+    }
+    var where = state.user
+      ? "הבחירה היומית והמילים נשמרות בחשבון שלך ומסונכרנות בין המכשירים. עותק נשמר גם בדפדפן הזה כדי שהכל יעבוד גם בלי רשת."
+      : (state.cloudDown
+        ? "החיבור לחשבון לא עלה כרגע, והנתונים נשמרים בדפדפן הזה בלבד."
+        : "הבחירה היומית והמילים נשמרות בדפדפן הזה בלבד, על המכשיר שלך. מחיקת נתוני הדפדפן תמחק גם אותן.");
+
     app.innerHTML = '<section class="page settings"><h1>הגדרות</h1>' +
       "<h2>לשון פנייה</h2>" + genderButtons() +
+      account +
       "<h2>איפה נשמרים הנתונים</h2>" +
-      '<p class="lede">הבחירה היומית והמילים נשמרות בדפדפן הזה בלבד, על המכשיר שלך, ואינן נשלחות לשום מקום. מחיקת נתוני הדפדפן תמחק גם אותן.</p>' +
-      "</section>";
+      '<p class="lede">' + esc(where) + "</p></section>";
   }
 
   function renderChoose() {
@@ -707,7 +914,7 @@
       });
       html += "</ol></div>";
     }
-    html += '<p class="where">היומן נשמר בדפדפן הזה בלבד.</p></section>';
+    html += '<p class="where">' + (state.user ? "היומן נשמר בחשבון שלך." : "היומן נשמר בדפדפן הזה בלבד.") + "</p></section>";
     app.innerHTML = html;
   }
 
@@ -718,6 +925,15 @@
     if (t2.dataset.being) return togglePick(t2.dataset.being);
     switch (t2.dataset.act) {
       case "gender": return setGender(t2.dataset.gender);
+      case "auth-go": return authSubmit();
+      case "auth-reset": return authReset();
+      case "auth-mode":
+        state.authMode = state.authMode === "up" ? "in" : "up";
+        state.msg = null;
+        return render(true);
+      case "sign-out":
+        if (cloud.api) cloud.api.signOut();
+        return;
       case "note-open": return openNote(t2.dataset.word);
       case "note-save": return saveNote();
       case "note-cancel": return closeNote();
@@ -732,6 +948,7 @@
   });
   app.addEventListener("keydown", function (ev) {
     if (ev.target.classList.contains("note-input") && ev.key === "Escape") { ev.preventDefault(); closeNote(); }
+    if (ev.target.classList.contains("input") && ev.key === "Enter") { ev.preventDefault(); authSubmit(); }
   });
   document.querySelector(".wake").addEventListener("click", function () { document.body.classList.remove("quiet"); });
   navButtons.forEach(function (b) {
@@ -761,7 +978,102 @@
 
   load();
   render();
+  if (WANTS_CLOUD) setTimeout(function () { if (!state.authKnown) cloud.onDown(); }, 9000);
 })();
+</script>
+
+<script type="module">
+  // Loaded only when a project is configured. It lives in its own module, so if the
+  // network or the browser blocks it, the app above simply stays in local mode.
+  var bridge = window.Havayot;
+  if (bridge.configured) {
+    try {
+      var V = "https://www.gstatic.com/firebasejs/10.14.1/";
+      var appMod = await import(V + "firebase-app.js");
+      var authMod = await import(V + "firebase-auth.js");
+      var dbMod = await import(V + "firebase-firestore.js");
+
+      var app = appMod.initializeApp(bridge.config);
+      var auth = authMod.getAuth(app);
+      var db = dbMod.getFirestore(app);
+      await authMod.setPersistence(auth, authMod.browserLocalPersistence);
+
+      var SAYS = {
+        "auth/invalid-email": "כתובת המייל אינה תקינה.",
+        "auth/missing-password": "צריך למלא סיסמה.",
+        "auth/weak-password": "הסיסמה קצרה מדי, צריך שישה תווים לפחות.",
+        "auth/email-already-in-use": "כבר קיים חשבון עם המייל הזה. אפשר להיכנס איתו.",
+        "auth/invalid-credential": "מייל או סיסמה שגויים.",
+        "auth/wrong-password": "מייל או סיסמה שגויים.",
+        "auth/user-not-found": "לא נמצא חשבון עם המייל הזה.",
+        "auth/too-many-requests": "יותר מדי ניסיונות. נסה שוב עוד כמה דקות.",
+        "auth/network-request-failed": "אין חיבור לרשת כרגע.",
+        "permission-denied": "אין הרשאה לקרוא או לכתוב. צריך לעדכן את כללי הגישה ב Firestore."
+      };
+      function say(err) {
+        var code = err && (err.code || err.message) || "";
+        bridge.onProblem(SAYS[code] || ("משהו השתבש: " + code));
+      }
+
+      var stopDays = null, stopSet = null;
+      function watch(uid) {
+        var first = { days: true, set: true };
+        stopDays = dbMod.onSnapshot(dbMod.collection(db, "users", uid, "days"), function (snap) {
+          var out = {};
+          snap.forEach(function (d) { out[d.id] = d.data(); });
+          bridge.onDays(out, first.days);
+          first.days = false;
+        }, say);
+        stopSet = dbMod.onSnapshot(dbMod.doc(db, "users", uid), function (d) {
+          bridge.onSettings(d.exists() ? d.data() : null, first.set);
+          first.set = false;
+        }, say);
+      }
+      function unwatch() {
+        if (stopDays) stopDays();
+        if (stopSet) stopSet();
+        stopDays = stopSet = null;
+      }
+
+      bridge.api = {
+        signIn: function (email, password) {
+          authMod.signInWithEmailAndPassword(auth, email, password).catch(say);
+        },
+        signUp: function (email, password) {
+          authMod.createUserWithEmailAndPassword(auth, email, password).catch(say);
+        },
+        reset: function (email) {
+          authMod.sendPasswordResetEmail(auth, email)
+            .then(function () { bridge.onNotice("נשלח אליך מייל לאיפוס הסיסמה."); })
+            .catch(say);
+        },
+        signOut: function () { authMod.signOut(auth).catch(say); },
+        putDay: function (key, day) {
+          var uid = auth.currentUser && auth.currentUser.uid;
+          if (!uid) return;
+          dbMod.setDoc(dbMod.doc(db, "users", uid, "days", key), {
+            date: key,
+            beings: day.beings.slice(),
+            notes: day.notes || {},
+            savedAt: day.savedAt || new Date().toISOString()
+          }).catch(say);
+        },
+        putSettings: function (set) {
+          var uid = auth.currentUser && auth.currentUser.uid;
+          if (!uid) return;
+          dbMod.setDoc(dbMod.doc(db, "users", uid), set, { merge: true }).catch(say);
+        }
+      };
+
+      authMod.onAuthStateChanged(auth, function (user) {
+        unwatch();
+        if (user) watch(user.uid);
+        bridge.onUser(user ? { uid: user.uid, email: user.email } : null);
+      });
+    } catch (e) {
+      bridge.onDown();
+    }
+  }
 </script>
 </body>
 </html>
