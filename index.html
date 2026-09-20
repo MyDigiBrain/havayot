@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="××××¨× ×××××ª ×©× ×××© ××××××ª, ×¢× ××××× ×¢× ××× ××××©×× ×××ª× ××××.">
+<meta name="description" content="בחירה יומית של חמש הוויות, עם מילים על איך מממשים אותן היום.">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="××××××ª">
+<meta name="apple-mobile-web-app-title" content="הוויות">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#FAF8F6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1C1829" media="(prefers-color-scheme: dark)">
-<title>××××××ª</title>
+<title>הוויות</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300..900&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -206,7 +206,7 @@
   .quiet-link { color: var(--muted); text-decoration: underline; text-underline-offset: .25em; min-height: 2.75rem; padding: 0 .2rem; }
   .row { display: flex; align-items: center; gap: 1rem; }
 
-  /* today â card layout */
+  /* today — card layout */
   .today-page {
     width: 100%; max-width: 34rem; margin: auto;
     padding: 1rem 1.35rem 1.5rem;
@@ -345,11 +345,11 @@
 </head>
 <body>
 <header class="top">
-  <p class="brand">××××××ª</p>
-  <nav class="nav" aria-label="× ××××">
-    <button type="button" data-view="today">××××</button>
-    <button type="button" data-view="log">××××</button>
-    <button type="button" data-view="settings">××××¨××ª</button>
+  <p class="brand">הוויות</p>
+  <nav class="nav" aria-label="ניווט">
+    <button type="button" data-view="today">היום</button>
+    <button type="button" data-view="log">יומן</button>
+    <button type="button" data-view="settings">הגדרות</button>
   </nav>
 </header>
 
@@ -357,22 +357,22 @@
 
 <noscript>
   <section class="nojs">
-    <h1>×¦×¨×× ××¤×ª×× ×××¤××¤×</h1>
-    <p class="lede">××××©×××× ×¤××¢× ×¨×§ ×××¤××¤× ×©××¨××¥ JavaScript, ×××©× Chrome ×× Safari. ×× ××¢××× × ×¤×ª× ××× ××ª×× ×ª×¦××× ××§×××× ×©× ×××××¡××¤, ×××× ×× ×ª××§×××ª ×§××¦××, ×××× ××¤×ª×× ×××ª× ×©×× ××××¤××¤×.</p>
+    <h1>צריך לפתוח בדפדפן</h1>
+    <p class="lede">היישומון פועל רק בדפדפן שמריץ JavaScript, למשל Chrome או Safari. אם העמוד נפתח כאן מתוך תצוגה מקדימה של וואטסאפ, מייל או תיקיית קבצים, כדאי לפתוח אותו שוב מהדפדפן.</p>
   </section>
 </noscript>
 
-<button type="button" class="wake" aria-label="××¦× ×©×× ××ª ××ª×¤×¨××"></button>
+<button type="button" class="wake" aria-label="הצג שוב את התפריט"></button>
 
 <script>
 /* ===========================================================================
-   ××××¨××ª ××××××¨ ×××©××× (Firebase)
+   הגדרות החיבור לחשבון (Firebase)
 
-   ×× ×¢×× ××©××¨××ª ×××× × ×©××¨××ª ××× ×©××, ××××©×××× ×¢××× ××§××××ª: ××× ××©×××,
-   ×××××× × ×©××¨ ×××¤××¤×. ××× ×××¤×¢×× ×× ××¡× ×¢× ×××× ××¡× ××¨×× ××× ×××©××¨××,
-   ×××××§×× ××× ××ª ×××××§ ×©××ª×§×× × Firebase, ×××¡× Project settings, ××¤×××§×¦×××ª Web.
-   ××× ×¦××¨× ×××¡×ª××¨ ××ª ×××¤×ª× ×××, ××× × ××¢× ×××××ª ××××; ×× ×©××× ×¢× ×× ×ª×× ××
-   ×× ×××× ××××©× × Firestore, ×©×××¤××¢×× ××§×××¥ README.
+   כל עוד השורות האלה נשארות כמו שהן, היישומון עובד מקומית: בלי חשבון,
+   והיומן נשמר בדפדפן. כדי להפעיל כניסה עם מייל וסנכרון בין מכשירים,
+   מדביקים כאן את הבלוק שמתקבל ב Firebase, במסך Project settings, אפליקציית Web.
+   אין צורך להסתיר את המפתח הזה, הוא נועד להיות גלוי; מה שמגן על הנתונים
+   הם כללי הגישה ב Firestore, שמופיעים בקובץ README.
    =========================================================================== */
 var FIREBASE_CONFIG = {
   apiKey: "AIzaSyBX26FRJywsEM9k7ait89OXwFQp7hkvlDw",
@@ -397,38 +397,38 @@ window.Havayot = {
   "use strict";
 
   var LIST = {
-    m: ["××××", "×××ª× ××", "××××¥", "××××¨", "××××", "××××", "××©××¨", "××©×¨", "××××", "×××§××¨", "××××",
-        "××××", "××××§×", "××¦×××§", "××§××", "××ª××©×", "××ª×¢× ×××", "× ×××", "× ×× ×", "× ××¢×", "× ××©×", "× ×× ××",
-        "× ×¢××", "×¢×¨× ×", "×¤×©××", "×¤×ª××", "×¦× ××¢", "×§×××", "×§×©××", "×¨×××¢", "×¨×××©", "×©××", "×©×§×"],
-    f: ["×××××ª", "×××ª× ×××ª", "××××¦×", "××××¨×", "×××××", "×××××ª", "××©××¨×", "××©×¨×", "××××", "×××§××¨×", "×××××ª",
-        "×××××", "××××§××ª", "××¦×××§×", "××§×××ª", "××ª××©××ª", "××ª×¢× ××× ×ª", "× ××××", "× ×× ××ª", "× ××¢××ª", "× ××©××ª", "× ×× ×××",
-        "× ×¢×××", "×¢×¨× ××ª", "×¤×©×××", "×¤×ª×××", "×¦× ××¢×", "×§××××", "×§×©×××", "×¨×××¢×", "×¨×××©×", "×©×××", "×©×§××"]
+    m: ["אוהב", "אותנטי", "אמיץ", "בהיר", "בטוח", "חומל", "ישיר", "ישר", "מודה", "מוקיר", "מכבד",
+        "מכיל", "ממוקד", "מצחיק", "מקבל", "מתחשב", "מתעניין", "נדיב", "נהנה", "נועז", "נושם", "נינוח",
+        "נעים", "ערני", "פשוט", "פתוח", "צנוע", "קליל", "קשוב", "רגוע", "רגיש", "שמח", "שקט"],
+    f: ["אוהבת", "אותנטית", "אמיצה", "בהירה", "בטוחה", "חומלת", "ישירה", "ישרה", "מודה", "מוקירה", "מכבדת",
+        "מכילה", "ממוקדת", "מצחיקה", "מקבלת", "מתחשבת", "מתעניינת", "נדיבה", "נהנית", "נועזת", "נושמת", "נינוחה",
+        "נעימה", "ערנית", "פשוטה", "פתוחה", "צנועה", "קלילה", "קשובה", "רגועה", "רגישה", "שמחה", "שקטה"]
   };
 
   var TEXT = {
     m: {
-      ask: "×× ××ª× ××××¨ ×××××ª ××××?",
-      lede: ". ×××¨ ×××© ××××××ª, ××× ×××× ×××ª× ×¢× ×××¨ ××××§×¨.",
-      principle: "××××× ×××××ª××ª ××¨×××× ××ª ××× ××× ×¤×××¢×ª ×× ×××××¨. ×××¨ ××××××ª ×××ª× ××××ª ×× ×××©××ª ××.",
-      save: "×©×××¨ ××ª ×××××¨×",
-      saveNote: "×©×××¨",
-      edit: "×©× × ××××¨×",
-      hint: "×××¡×£ ×××××",
-      placeholder: "××× ×× × ××××© ××ª ×× ××××?",
-      writeOn: "××ª×× ×¢× ",
-      logEmpty: "×¢×××× ××× ×××× ×××××. ×××¨× ×©×ª×©×××¨ ××ª ×××© ×××××××ª ×©× ××××§×¨, ×× ×××¤××¢× ×××."
+      ask: "מי אתה בוחר להיות היום?",
+      lede: ". בחר חמש הוויות, והן ילוו אותך עד מחר בבוקר.",
+      principle: "הוויה איכותית מרחיבה את הלב ולא פוגעת בך ובאחר. בחר הוויות אותנטיות ונגישות לך.",
+      save: "שמור את הבחירה",
+      saveNote: "שמור",
+      edit: "שנה בחירה",
+      hint: "הוסף מילים",
+      placeholder: "איך אני מממש את זה היום?",
+      writeOn: "כתוב על ",
+      logEmpty: "עדיין אין ימים ביומן. אחרי שתשמור את חמש ההוויות של הבוקר, הן יופיעו כאן."
     },
     f: {
-      ask: "×× ××ª ××××¨×ª ×××××ª ××××?",
-      lede: ". ×××¨× ×××© ××××××ª, ××× ×××× ×××ª× ×¢× ×××¨ ××××§×¨.",
-      principle: "××××× ×××××ª××ª ××¨×××× ××ª ××× ××× ×¤×××¢×ª ×× ×××××¨. ×××¨× ××××××ª ×××ª× ××××ª ×× ×××©××ª ××.",
-      save: "×©××¨× ××ª ×××××¨×",
-      saveNote: "×©××¨×",
-      edit: "×©× × ××××¨×",
-      hint: "×××¡××¤× ×××××",
-      placeholder: "××× ×× × ××××©×ª ××ª ×× ××××?",
-      writeOn: "××ª×× ×¢× ",
-      logEmpty: "×¢×××× ××× ×××× ×××××. ×××¨× ×©×ª×©××¨× ××ª ×××© ×××××××ª ×©× ××××§×¨, ×× ×××¤××¢× ×××."
+      ask: "מי את בוחרת להיות היום?",
+      lede: ". בחרי חמש הוויות, והן ילוו אותך עד מחר בבוקר.",
+      principle: "הוויה איכותית מרחיבה את הלב ולא פוגעת בך ובאחר. בחרי הוויות אותנטיות ונגישות לך.",
+      save: "שמרי את הבחירה",
+      saveNote: "שמרי",
+      edit: "שני בחירה",
+      hint: "הוסיפי מילים",
+      placeholder: "איך אני מממשת את זה היום?",
+      writeOn: "כתבי על ",
+      logEmpty: "עדיין אין ימים ביומן. אחרי שתשמרי את חמש ההוויות של הבוקר, הן יופיעו כאן."
     }
   };
 
@@ -436,7 +436,7 @@ window.Havayot = {
   var WANTS_CLOUD = cloud && cloud.configured;
 
   var MAX = 5;
-  var BREATH = 20;  // "× ××©×" / "× ××©××ª" â the same position in both lists, kept as the first by default
+  var BREATH = 20;  // "נושם" / "נושמת" — the same position in both lists, kept as the first by default
   var DAY_STARTS_AT = 4; // a new day begins at 04:00, so a late night still belongs to the day before
   var K_DAYS = "havayot.days.v1";
   var K_SET = "havayot.settings.v1";
@@ -696,7 +696,7 @@ window.Havayot = {
     if (!mail || !pass || !cloud.api) return;
     var email = mail.value.trim(), password = pass.value;
     if (!email || !password) {
-      state.msg = { text: "×¦×¨×× ×××× ×××× ××¡××¡××.", good: false };
+      state.msg = { text: "צריך למלא מייל וסיסמה.", good: false };
       return render(true);
     }
     state.busy = true;
@@ -710,7 +710,7 @@ window.Havayot = {
     if (!mail || !cloud.api) return;
     var email = mail.value.trim();
     if (!email) {
-      state.msg = { text: "××× ×§××× ××ª ××ª×××ª ×××××, ××× ×××¥ ×©××.", good: false };
+      state.msg = { text: "מלא קודם את כתובת המייל, ואז לחץ שוב.", good: false };
       return render(true);
     }
     state.busy = true;
@@ -746,7 +746,7 @@ window.Havayot = {
     if (!force && key === screenKey) { if (key.indexOf("choose:") === 0) updateChoose(); return; }
     screenKey = key;
 
-    if (key.indexOf("wait:") === 0) app.innerHTML = '<section class="page spinner"><p>×¨××¢, ××ª×××¨ ×××©×××...</p></section>';
+    if (key.indexOf("wait:") === 0) app.innerHTML = '<section class="page spinner"><p>רגע, מתחבר לחשבון...</p></section>';
     else if (key.indexOf("auth:") === 0) renderAuth();
     else if (key.indexOf("setup:") === 0) renderSetup();
     else if (key.indexOf("settings:") === 0) renderSettings();
@@ -758,8 +758,8 @@ window.Havayot = {
 
   function genderButtons() {
     return '<div class="choices">' +
-      '<button type="button" class="choice" data-act="gender" data-gender="m" aria-pressed="' + (state.gender === "m") + '">×××©×× ×××¨</button>' +
-      '<button type="button" class="choice" data-act="gender" data-gender="f" aria-pressed="' + (state.gender === "f") + '">×××©×× × ×§××</button>' +
+      '<button type="button" class="choice" data-act="gender" data-gender="m" aria-pressed="' + (state.gender === "m") + '">בלשון זכר</button>' +
+      '<button type="button" class="choice" data-act="gender" data-gender="f" aria-pressed="' + (state.gender === "f") + '">בלשון נקבה</button>' +
       "</div>";
   }
 
@@ -772,21 +772,21 @@ window.Havayot = {
 
     var googleSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>';
 
-    app.innerHTML = '<section class="page auth"><h1>' + (up ? "×¤×ª×××ª ××©×××" : "×× ××¡×") + "</h1>" +
+    app.innerHTML = '<section class="page auth"><h1>' + (up ? "פתיחת חשבון" : "כניסה") + "</h1>" +
       '<p class="lede">' + (up
-        ? "××©××× ×××© ×©×××¨ ××ª ×××××¨××ª ××××××× ×©××, ×××¡× ××¨× ×××ª× ××× ×× ××××©××¨××."
-        : "×××××¨××ª ××××××× ×©×× × ×©××¨××ª ×××©××× ×× ×¤×ª×××ª ××× ×××©××¨.") + "</p>" +
+        ? "חשבון חדש שומר את הבחירות והמילים שלך, ומסנכרן אותן בין כל המכשירים."
+        : "הבחירות והמילים שלך נשמרות בחשבון ונפתחות מכל מכשיר.") + "</p>" +
       (state.msg ? '<p class="msg' + (state.msg.good ? " good" : "") + '">' + esc(state.msg.text) + "</p>" : "") +
       '<button type="button" class="google-btn" data-act="auth-google"' + (state.busy ? " disabled" : "") + ">" +
-      googleSvg + (state.busy ? "×¨××¢..." : "×××©× ×¢× Google") + "</button>" +
-      '<div class="divider">××</div>' +
-      '<input class="input" id="mail" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="××ª×××ª ××××" value="' + esc(mail) + '">' +
-      '<input class="input" id="pass" type="password" autocomplete="' + (up ? "new-password" : "current-password") + '" placeholder="×¡××¡××" value="' + esc(pass) + '">' +
+      googleSvg + (state.busy ? "רגע..." : "המשך עם Google") + "</button>" +
+      '<div class="divider">או</div>' +
+      '<input class="input" id="mail" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="כתובת מייל" value="' + esc(mail) + '">' +
+      '<input class="input" id="pass" type="password" autocomplete="' + (up ? "new-password" : "current-password") + '" placeholder="סיסמה" value="' + esc(pass) + '">' +
       '<button type="button" class="primary" data-act="auth-go"' + (state.busy ? " disabled" : "") + ">" +
-      (state.busy ? "×¨××¢..." : (up ? "×¤×ª× ××©×××" : "×× ××¡× ×¢× ××××")) + "</button>" +
+      (state.busy ? "רגע..." : (up ? "פתח חשבון" : "כניסה עם מייל")) + "</button>" +
       '<div class="auth-links">' +
-      '<button type="button" class="quiet-link" data-act="auth-mode">' + (up ? "×××¨ ××© ×× ××©×××" : "××× ×× ××©××× ×¢××××") + "</button>" +
-      (up ? "" : '<button type="button" class="quiet-link" data-act="auth-reset">×©×××ª× ×¡××¡××</button>') +
+      '<button type="button" class="quiet-link" data-act="auth-mode">' + (up ? "כבר יש לי חשבון" : "אין לי חשבון עדיין") + "</button>" +
+      (up ? "" : '<button type="button" class="quiet-link" data-act="auth-reset">שכחתי סיסמה</button>') +
       "</div></section>";
 
     var focusOn = app.querySelector(mail ? "#pass" : "#mail");
@@ -794,38 +794,38 @@ window.Havayot = {
   }
 
   function renderSetup() {
-    app.innerHTML = '<section class="page setup"><h1>×¨××¢ ××¤× × ×©××ª×××××</h1>' +
-      '<p class="lede">××××× ××©×× ××¤× ××ª ××××? ××¤×©×¨ ××©× ××ª ××ª ×× ××× ×¨××¢ ×××¡× ×××××¨××ª.</p>' +
+    app.innerHTML = '<section class="page setup"><h1>רגע לפני שמתחילים</h1>' +
+      '<p class="lede">באיזו לשון לפנות אליך? אפשר לשנות את זה בכל רגע במסך ההגדרות.</p>' +
       genderButtons() + "</section>";
   }
 
   function renderSettings() {
     var account = "";
     if (state.user) {
-      account = "<h2>×××©××× ×©××</h2><div class=\"account\">" +
-        '<p class="who">' + esc(state.user.email || "×××××¨") + "</p>" +
-        '<button type="button" class="quiet-link" data-act="sign-out">××¦××× ××××©×××</button></div>';
+      account = "<h2>החשבון שלך</h2><div class=\"account\">" +
+        '<p class="who">' + esc(state.user.email || "מחובר") + "</p>" +
+        '<button type="button" class="quiet-link" data-act="sign-out">יציאה מהחשבון</button></div>';
     }
     var where = state.user
-      ? "×××××¨× ××××××ª ××××××× × ×©××¨××ª ×××©××× ×©×× ×××¡×× ××¨× ××ª ××× ××××©××¨××. ×¢××ª×§ × ×©××¨ ×× ×××¤××¤× ××× ××× ×©××× ××¢××× ×× ××× ×¨×©×ª."
+      ? "הבחירה היומית והמילים נשמרות בחשבון שלך ומסונכרנות בין המכשירים. עותק נשמר גם בדפדפן הזה כדי שהכל יעבוד גם בלי רשת."
       : (state.cloudDown
-        ? "××××××¨ ×××©××× ×× ×¢×× ××¨××¢, ××× ×ª×× ×× × ×©××¨×× ×××¤××¤× ××× ××××."
-        : "×××××¨× ××××××ª ××××××× × ×©××¨××ª ×××¤××¤× ××× ××××, ×¢× ××××©××¨ ×©××. ××××§×ª × ×ª×× × ×××¤××¤× ×ª×××§ ×× ×××ª×.");
+        ? "החיבור לחשבון לא עלה כרגע, והנתונים נשמרים בדפדפן הזה בלבד."
+        : "הבחירה היומית והמילים נשמרות בדפדפן הזה בלבד, על המכשיר שלך. מחיקת נתוני הדפדפן תמחק גם אותן.");
 
-    app.innerHTML = '<section class="page settings"><h1>××××¨××ª</h1>' +
-      "<h2>××©×× ×¤× ×××</h2>" + genderButtons() +
+    app.innerHTML = '<section class="page settings"><h1>הגדרות</h1>' +
+      "<h2>לשון פנייה</h2>" + genderButtons() +
       account +
-      "<h2>×××¤× × ×©××¨×× ×× ×ª×× ××</h2>" +
+      "<h2>איפה נשמרים הנתונים</h2>" +
       '<p class="lede">' + esc(where) + "</p></section>";
   }
 
   function renderChoose() {
     var key = dayKey();
     if (!state.editing && !picked().length) state.picks = suggestedPicks();
-    var guide = '<div class="guide"><p class="guide-title">××××¦× ×××××¨×</p><ul>' +
-      '<li><i style="--t:var(--p5)"></i>×××××ª × ×©××× ×××¨××¨×ª ××××</li>' +
-      '<li><i style="--t:var(--p4)"></i>×©×ª× ××××××ª × ×××©××ª</li>' +
-      '<li><i style="--t:var(--p2)"></i>×©×ª× ××××××ª ×¨×¦××××ª ××××ª××¨××ª</li></ul></div>';
+    var guide = '<div class="guide"><p class="guide-title">המלצה לבחירה</p><ul>' +
+      '<li><i style="--t:var(--p5)"></i>הווית נשימה כברירת מחדל</li>' +
+      '<li><i style="--t:var(--p4)"></i>שתי הוויות נגישות</li>' +
+      '<li><i style="--t:var(--p2)"></i>שתי הוויות רצויות ומאתגרות</li></ul></div>';
     app.innerHTML = '<section class="page choose">' +
       "<h1>" + esc(t().ask) + "</h1>" +
       '<p class="lede">' + esc(fmt(key, { weekday: "long", day: "numeric", month: "long" })) + esc(t().lede) + "</p>" +
@@ -841,7 +841,7 @@ window.Havayot = {
       '<div class="savebar"><div class="savebar-in">' +
       '<span class="count" aria-live="polite"></span>' +
       '<div class="row">' +
-      (state.editing ? '<button type="button" class="quiet-link" data-act="cancel">×××××</button>' : "") +
+      (state.editing ? '<button type="button" class="quiet-link" data-act="cancel">ביטול</button>' : "") +
       '<button type="button" class="primary" data-act="save">' + esc(t().save) + "</button>" +
       "</div></div></div>";
     updateChoose();
@@ -857,7 +857,7 @@ window.Havayot = {
       btn.disabled = full && at < 0;
     });
     var count = app.querySelector(".count");
-    if (count) count.textContent = n + " ××ª×× " + MAX;
+    if (count) count.textContent = n + " מתוך " + MAX;
     var save = app.querySelector('[data-act="save"]');
     if (save) save.disabled = !full;
   }
@@ -873,7 +873,7 @@ window.Havayot = {
       return '<li><button type="button" class="' + cls + '" style="--tint:' + tintAt(i) + ';--i:' + i + '" ' +
         'data-act="note-open" data-word="' + esc(b) + '" aria-label="' + esc(t().writeOn + b) + '">' +
         '<span class="being-name">' + esc(b) + '</span>' +
-        (note ? '<span class="being-hint">' + esc(note.length > 80 ? note.slice(0, 80) + 'â¦' : note) + '</span>' : '') +
+        (note ? '<span class="being-hint">' + esc(note.length > 80 ? note.slice(0, 80) + '…' : note) + '</span>' : '') +
         '</button></li>';
     }).join("");
 
@@ -881,11 +881,11 @@ window.Havayot = {
     if (state.noteFor) {
       var editNote = notes[state.noteFor] || "";
       noteHtml = '<div class="note-zone">' +
-        '<p class="note-for">××××× ×¢× <strong>' + esc(state.noteFor) + '</strong></p>' +
+        '<p class="note-for">מילים על <strong>' + esc(state.noteFor) + '</strong></p>' +
         '<textarea class="note-input" rows="3" maxlength="2000" placeholder="' + esc(t().placeholder) + '">' + esc(editNote) + '</textarea>' +
         '<div class="note-actions">' +
         '<button type="button" class="primary" data-act="note-save">' + esc(t().saveNote) + '</button>' +
-        '<button type="button" class="quiet-link" data-act="note-cancel">×××××</button>' +
+        '<button type="button" class="quiet-link" data-act="note-cancel">ביטול</button>' +
         '</div></div>';
     }
 
@@ -895,7 +895,7 @@ window.Havayot = {
       noteHtml +
       '<div class="show-foot">' +
       '<button type="button" class="quiet-link" data-act="edit">' + esc(t().edit) + '</button>' +
-      '<button type="button" class="quiet-link" data-act="quiet">××¡× × ×§×</button>' +
+      '<button type="button" class="quiet-link" data-act="quiet">מסך נקי</button>' +
       '</div></section>';
 
     if (state.noteFor) {
@@ -919,7 +919,7 @@ window.Havayot = {
   function renderLog() {
     var keys = Object.keys(state.days).sort().reverse();
     var todayKey = dayKey();
-    var html = '<section class="page log"><h1>××××</h1>';
+    var html = '<section class="page log"><h1>יומן</h1>';
 
     if (!keys.length) {
       html += '<p class="empty">' + esc(t().logEmpty) + "</p>";
@@ -930,7 +930,7 @@ window.Havayot = {
         var top = Object.keys(tally).filter(function (b) { return tally[b] >= 2; })
           .sort(function (a, b) { return tally[b] - tally[a] || a.localeCompare(b, "he"); }).slice(0, 8);
         if (top.length) {
-          html += '<div class="often"><h2>×××××××ª ×©×××¨×ª ××× ××¨××, ××ª×× ' + keys.length + " ××××</h2><ul>" +
+          html += '<div class="often"><h2>ההוויות שבחרת הכי הרבה, מתוך ' + keys.length + " ימים</h2><ul>" +
             top.map(function (b) {
               return "<li>" + esc(b) + "<span>" + tally[b] + "</span></li>";
             }).join("") + "</ul></div>";
@@ -947,7 +947,7 @@ window.Havayot = {
         var day = state.days[k], dayNotes = day.notes || {};
         var written = day.beings.filter(function (b) { return dayNotes[b]; });
         html += '<li><p class="when">' + esc(fmt(k, { weekday: "long", day: "numeric", month: "long" })) +
-          (k === todayKey ? "<b>××××</b>" : "") + "</p>";
+          (k === todayKey ? "<b>היום</b>" : "") + "</p>";
         if (!written.length) {
           html += '<p class="what">' + esc(day.beings.join(", ")) + "</p>";
         } else {
@@ -960,7 +960,7 @@ window.Havayot = {
       });
       html += "</ol></div>";
     }
-    html += '<p class="where">' + (state.user ? "××××× × ×©××¨ ×××©××× ×©××." : "××××× × ×©××¨ ×××¤××¤× ××× ××××.") + "</p></section>";
+    html += '<p class="where">' + (state.user ? "היומן נשמר בחשבון שלך." : "היומן נשמר בדפדפן הזה בלבד.") + "</p></section>";
     app.innerHTML = html;
   }
 
@@ -1046,20 +1046,20 @@ window.Havayot = {
       await authMod.setPersistence(auth, authMod.browserLocalPersistence);
 
       var SAYS = {
-        "auth/invalid-email": "××ª×××ª ××××× ××× × ×ª×§×× ×.",
-        "auth/missing-password": "×¦×¨×× ×××× ×¡××¡××.",
-        "auth/weak-password": "××¡××¡×× ×§×¦×¨× ×××, ×¦×¨×× ×©××©× ×ª×××× ××¤×××ª.",
-        "auth/email-already-in-use": "×××¨ ×§××× ××©××× ×¢× ××××× ×××. ××¤×©×¨ ××××× ×¡ ×××ª×.",
-        "auth/invalid-credential": "×××× ×× ×¡××¡×× ×©×××××.",
-        "auth/wrong-password": "×××× ×× ×¡××¡×× ×©×××××.",
-        "auth/user-not-found": "×× × ××¦× ××©××× ×¢× ××××× ×××.",
-        "auth/too-many-requests": "×××ª×¨ ××× × ××¡××× ××ª. × ×¡× ×©×× ×¢×× ××× ××§××ª.",
-        "auth/network-request-failed": "××× ×××××¨ ××¨×©×ª ××¨××¢.",
-        "permission-denied": "××× ××¨×©×× ××§×¨×× ×× ×××ª××. ×¦×¨×× ××¢××× ××ª ×××× ××××©× × Firestore."
+        "auth/invalid-email": "כתובת המייל אינה תקינה.",
+        "auth/missing-password": "צריך למלא סיסמה.",
+        "auth/weak-password": "הסיסמה קצרה מדי, צריך שישה תווים לפחות.",
+        "auth/email-already-in-use": "כבר קיים חשבון עם המייל הזה. אפשר להיכנס איתו.",
+        "auth/invalid-credential": "מייל או סיסמה שגויים.",
+        "auth/wrong-password": "מייל או סיסמה שגויים.",
+        "auth/user-not-found": "לא נמצא חשבון עם המייל הזה.",
+        "auth/too-many-requests": "יותר מדי ניסיונות. נסה שוב עוד כמה דקות.",
+        "auth/network-request-failed": "אין חיבור לרשת כרגע.",
+        "permission-denied": "אין הרשאה לקרוא או לכתוב. צריך לעדכן את כללי הגישה ב Firestore."
       };
       function say(err) {
         var code = err && (err.code || err.message) || "";
-        bridge.onProblem(SAYS[code] || ("××©×× ××©×ª××©: " + code));
+        bridge.onProblem(SAYS[code] || ("משהו השתבש: " + code));
       }
 
       var stopDays = null, stopSet = null;
@@ -1095,7 +1095,7 @@ window.Havayot = {
         },
         reset: function (email) {
           authMod.sendPasswordResetEmail(auth, email)
-            .then(function () { bridge.onNotice("× ×©×× ×××× ×××× ××××¤××¡ ××¡××¡××."); })
+            .then(function () { bridge.onNotice("נשלח אליך מייל לאיפוס הסיסמה."); })
             .catch(say);
         },
         signOut: function () { authMod.signOut(auth).catch(say); },
