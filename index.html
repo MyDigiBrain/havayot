@@ -873,7 +873,7 @@ window.Havayot = {
       return '<li><button type="button" class="' + cls + '" style="--tint:' + tintAt(i) + ';--i:' + i + '" ' +
         'data-act="note-open" data-word="' + esc(b) + '" aria-label="' + esc(t().writeOn + b) + '">' +
         '<span class="being-name">' + esc(b) + '</span>' +
-        (note ? '<span class="being-hint">' + esc(note.length > 80 ? note.slice(0, 80) + '…' : note) + '</span>' : '') +
+        (note ? '<span class="being-hint">' + esc(note) + '</span>' : '') +
         '</button></li>';
     }).join("");
 
@@ -882,7 +882,7 @@ window.Havayot = {
       var editNote = notes[state.noteFor] || "";
       noteHtml = '<div class="note-zone">' +
         '<p class="note-for">מילים על <strong>' + esc(state.noteFor) + '</strong></p>' +
-        '<textarea class="note-input" rows="3" maxlength="2000" placeholder="' + esc(t().placeholder) + '">' + esc(editNote) + '</textarea>' +
+        '<textarea class="note-input" rows="3" maxlength="115" placeholder="' + esc(t().placeholder) + '">' + esc(editNote) + '</textarea>' +
         '<div class="note-actions">' +
         '<button type="button" class="primary" data-act="note-save">' + esc(t().saveNote) + '</button>' +
         '<button type="button" class="quiet-link" data-act="note-cancel">ביטול</button>' +
@@ -970,34 +970,74 @@ window.Havayot = {
     ctx.textBaseline = 'top';
     ctx.fillText(dateStr, W - pad, H * 0.07);
 
-    // helper: single-line truncation for canvas
-    function truncate(ctx, text, maxW) {
-      if (ctx.measureText(text).width <= maxW) return text;
-      while (text.length > 1 && ctx.measureText(text + '…').width > maxW) {
-        text = text.slice(0, -1);
+    // word-wrap helper — ctx font must be set before calling
+    function wrapLines(text, maxW, maxL) {
+      if (!text) return [];
+      var words = text.split(' ');
+      var lines = [], cur = '';
+      for (var i = 0; i < words.length; i++) {
+        var test = cur ? cur + ' ' + words[i] : words[i];
+        if (ctx.measureText(test).width > maxW && cur) {
+          lines.push(cur);
+          if (lines.length >= maxL) { cur = ''; break; }
+          cur = words[i];
+        } else { cur = test; }
       }
-      return text + '…';
+      if (cur && lines.length < maxL) lines.push(cur);
+      if (lines.length) {
+        var last = lines[lines.length - 1];
+        while (ctx.measureText(last + '…').width > maxW && last.length > 1)
+          last = last.slice(0, -1);
+        if (last !== lines[lines.length - 1]) lines[lines.length - 1] = last + '…';
+      }
+      return lines;
     }
 
     // cards
-    var beings = today.beings;
-    var notes  = today.notes || {};
+    var beings   = today.beings;
+    var notes    = today.notes || {};
     var hasNotes = beings.some(function(b) { return !!notes[b]; });
 
     var cardGap  = 10;
-    var vertFrac = hasNotes ? 0.72 : 0.55;
-    var maxCardH = hasNotes ? 118 : 82;
-    var cardH    = Math.min(maxCardH, (H * vertFrac) / beings.length - cardGap);
-    var totalH   = beings.length * (cardH + cardGap) - cardGap;
-    var startY   = (H - totalH) / 2 + (hasNotes ? 10 : 0);
     var cardW    = W - pad * 2;
-    var r        = 16;
     var innerPad = 18;
+    var noteMaxW = cardW - innerPad * 2;
 
-    var titleSize = Math.min(22, cardH * (hasNotes ? 0.26 : 0.42));
-    var noteSize  = Math.min(13.5, cardH * 0.155);
+    // count how many lines each note needs (up to 3), find the max
+    var maxLinesNeeded = 0;
+    if (hasNotes) {
+      ctx.font = '12px "IBM Plex Sans Hebrew", Arial, sans-serif';
+      beings.forEach(function(b) {
+        var note = notes[b] || '';
+        if (note) {
+          var ls = wrapLines(note, noteMaxW, 3);
+          if (ls.length > maxLinesNeeded) maxLinesNeeded = ls.length;
+        }
+      });
+    }
 
-    beings.forEach(function (b, i) {
+    // layout params based on max lines needed across all cards
+    var vertFrac, maxCardH, titleSize, noteSize, lineH;
+    if (!hasNotes || maxLinesNeeded === 0) {
+      vertFrac = 0.55; maxCardH = 82;
+      titleSize = 22;  noteSize = 0;    lineH = 0;
+    } else if (maxLinesNeeded === 1) {
+      vertFrac = 0.65; maxCardH = 100;
+      titleSize = 19;  noteSize = 13;   lineH = 17;
+    } else if (maxLinesNeeded === 2) {
+      vertFrac = 0.79; maxCardH = 130;
+      titleSize = 19;  noteSize = 12.5; lineH = 17;
+    } else {
+      vertFrac = 0.87; maxCardH = 148;
+      titleSize = 17;  noteSize = 11.5; lineH = 15.5;
+    }
+
+    var cardH  = Math.min(maxCardH, (H * vertFrac) / beings.length - cardGap);
+    var totalH = beings.length * (cardH + cardGap) - cardGap;
+    var startY = (H - totalH) / 2 + (hasNotes ? 10 : 0);
+    var r      = 16;
+
+    beings.forEach(function(b, i) {
       var note = notes[b] || '';
       var y    = startY + i * (cardH + cardGap);
 
@@ -1006,24 +1046,39 @@ window.Havayot = {
       roundRect(ctx, pad, y, cardW, cardH, r);
       ctx.fill();
 
-      ctx.textAlign    = 'right';
-      var xRight       = pad + cardW - innerPad;
+      ctx.textAlign = 'right';
+      var xRight = pad + cardW - innerPad;
 
       if (note) {
-        // title in upper ~35% of card
-        var titleY = y + cardH * 0.35;
+        // title zone: top 36% of card
+        var titleZoneH = cardH * 0.36;
+        var titleY     = y + titleZoneH / 2;
         ctx.fillStyle    = cardTxt;
         ctx.font         = 'bold ' + titleSize + 'px "Frank Ruhl Libre", Georgia, serif';
         ctx.textBaseline = 'middle';
         ctx.fillText(b, xRight, titleY);
 
-        // note in lower ~65% - truncated to one line
-        var noteY    = y + cardH * 0.68;
-        var noteMaxW = cardW - innerPad * 2;
+        // separator
+        ctx.strokeStyle = 'rgba(53,50,60,0.10)';
+        ctx.lineWidth   = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(pad + innerPad, y + titleZoneH);
+        ctx.lineTo(pad + cardW - innerPad, y + titleZoneH);
+        ctx.stroke();
+
+        // note zone: bottom 64%
+        var noteZoneTop = y + titleZoneH + 4;
+        var noteZoneH   = cardH - titleZoneH - 4;
         ctx.fillStyle    = noteClr;
         ctx.font         = noteSize + 'px "IBM Plex Sans Hebrew", Arial, sans-serif';
         ctx.textBaseline = 'middle';
-        ctx.fillText(truncate(ctx, note, noteMaxW), xRight, noteY);
+
+        var lines      = wrapLines(note, noteMaxW, maxLinesNeeded || 3);
+        var blockH     = lines.length * lineH;
+        var noteStartY = noteZoneTop + (noteZoneH - blockH) / 2;
+        lines.forEach(function(line, li) {
+          ctx.fillText(line, xRight, noteStartY + li * lineH + lineH / 2);
+        });
       } else {
         // no note — center the title
         ctx.fillStyle    = cardTxt;
