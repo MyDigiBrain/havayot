@@ -935,9 +935,9 @@ window.Havayot = {
     if (!today || !today.beings || !today.beings.length) return;
     var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     var bg      = isDark ? '#1C1829' : '#FAF8F6';
-    var ink     = isDark ? '#EDE8F2' : '#35323C';
     var muteClr = isDark ? '#9890A2' : '#857F8C';
     var cardTxt = isDark ? '#2A1E3A' : '#35323C';
+    var noteClr = isDark ? 'rgba(42,30,58,0.72)' : 'rgba(53,50,60,0.62)';
     var COLORS  = isDark
       ? ['#AACCDE','#B8D4B0','#B8D4B0','#EAC8A8','#EAC8A8']
       : ['#D6E6F2','#DCEBD9','#DCEBD9','#FAE4CE','#FAE4CE'];
@@ -960,37 +960,77 @@ window.Havayot = {
     ctx.scale(dpr, dpr);
     var W = sw / dpr;
     var H = sh / dpr;
-    var pad = 28;
+    var pad = 24;
 
     // date
     var dateStr = fmt(dayKey(), { weekday: 'long', day: 'numeric', month: 'long' });
     ctx.fillStyle = muteClr;
-    ctx.font = (14 * (W / 390)) + 'px "IBM Plex Sans Hebrew", Arial, sans-serif';
+    ctx.font = (13 * (W / 390)) + 'px "IBM Plex Sans Hebrew", Arial, sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'top';
-    ctx.fillText(dateStr, W - pad, H * 0.08);
+    ctx.fillText(dateStr, W - pad, H * 0.07);
+
+    // helper: single-line truncation for canvas
+    function truncate(ctx, text, maxW) {
+      if (ctx.measureText(text).width <= maxW) return text;
+      while (text.length > 1 && ctx.measureText(text + '…').width > maxW) {
+        text = text.slice(0, -1);
+      }
+      return text + '…';
+    }
 
     // cards
     var beings = today.beings;
-    var cardH = Math.min(80, (H * 0.55) / beings.length - 14);
-    var cardGap = 12;
-    var totalH = beings.length * (cardH + cardGap) - cardGap;
-    var startY = (H - totalH) / 2;
-    var cardW = W - pad * 2;
-    var r = 18;
-    var fontSize = Math.min(26, cardH * 0.42);
+    var notes  = today.notes || {};
+    var hasNotes = beings.some(function(b) { return !!notes[b]; });
+
+    var cardGap  = 10;
+    var vertFrac = hasNotes ? 0.72 : 0.55;
+    var maxCardH = hasNotes ? 118 : 82;
+    var cardH    = Math.min(maxCardH, (H * vertFrac) / beings.length - cardGap);
+    var totalH   = beings.length * (cardH + cardGap) - cardGap;
+    var startY   = (H - totalH) / 2 + (hasNotes ? 10 : 0);
+    var cardW    = W - pad * 2;
+    var r        = 16;
+    var innerPad = 18;
+
+    var titleSize = Math.min(22, cardH * (hasNotes ? 0.26 : 0.42));
+    var noteSize  = Math.min(13.5, cardH * 0.155);
 
     beings.forEach(function (b, i) {
-      var y = startY + i * (cardH + cardGap);
+      var note = notes[b] || '';
+      var y    = startY + i * (cardH + cardGap);
+
+      // card background
       ctx.fillStyle = COLORS[i] || fallback;
       roundRect(ctx, pad, y, cardW, cardH, r);
       ctx.fill();
 
-      ctx.fillStyle = cardTxt;
-      ctx.font = 'bold ' + fontSize + 'px "Frank Ruhl Libre", Georgia, serif';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(b, pad + cardW - 20, y + cardH / 2);
+      ctx.textAlign    = 'right';
+      var xRight       = pad + cardW - innerPad;
+
+      if (note) {
+        // title in upper ~35% of card
+        var titleY = y + cardH * 0.35;
+        ctx.fillStyle    = cardTxt;
+        ctx.font         = 'bold ' + titleSize + 'px "Frank Ruhl Libre", Georgia, serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(b, xRight, titleY);
+
+        // note in lower ~65% - truncated to one line
+        var noteY    = y + cardH * 0.68;
+        var noteMaxW = cardW - innerPad * 2;
+        ctx.fillStyle    = noteClr;
+        ctx.font         = noteSize + 'px "IBM Plex Sans Hebrew", Arial, sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(truncate(ctx, note, noteMaxW), xRight, noteY);
+      } else {
+        // no note — center the title
+        ctx.fillStyle    = cardTxt;
+        ctx.font         = 'bold ' + titleSize + 'px "Frank Ruhl Libre", Georgia, serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(b, xRight, y + cardH / 2);
+      }
     });
 
     ctx.restore();
