@@ -895,6 +895,7 @@ window.Havayot = {
       noteHtml +
       '<div class="show-foot">' +
       '<button type="button" class="quiet-link" data-act="edit">' + esc(t().edit) + '</button>' +
+      '<button type="button" class="quiet-link" data-act="save-wallpaper">📲 שמור כרקע</button>' +
       '<button type="button" class="quiet-link" data-act="quiet">מסך נקי</button>' +
       '</div></section>';
 
@@ -914,6 +915,101 @@ window.Havayot = {
         if (w) w.focus();
       }, 2000);
     }
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  }
+
+  function saveWallpaper(today) {
+    if (!today || !today.beings || !today.beings.length) return;
+    var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var bg      = isDark ? '#1C1829' : '#FAF8F6';
+    var ink     = isDark ? '#EDE8F2' : '#35323C';
+    var muteClr = isDark ? '#9890A2' : '#857F8C';
+    var cardTxt = isDark ? '#2A1E3A' : '#35323C';
+    var COLORS  = isDark
+      ? ['#AACCDE','#B8D4B0','#B8D4B0','#EAC8A8','#EAC8A8']
+      : ['#D6E6F2','#DCEBD9','#DCEBD9','#FAE4CE','#FAE4CE'];
+    var fallback = isDark ? '#C4B8DE' : '#E4DEF2';
+
+    var dpr = window.devicePixelRatio || 2;
+    var sw  = window.screen.width  * dpr;
+    var sh  = window.screen.height * dpr;
+    var canvas = document.createElement('canvas');
+    canvas.width  = sw;
+    canvas.height = sh;
+    var ctx = canvas.getContext('2d');
+
+    // background
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, sw, sh);
+
+    // work in logical pixels scaled by dpr
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    var W = sw / dpr;
+    var H = sh / dpr;
+    var pad = 28;
+
+    // date
+    var dateStr = fmt(dayKey(), { weekday: 'long', day: 'numeric', month: 'long' });
+    ctx.fillStyle = muteClr;
+    ctx.font = (14 * (W / 390)) + 'px "IBM Plex Sans Hebrew", Arial, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText(dateStr, W - pad, H * 0.08);
+
+    // cards
+    var beings = today.beings;
+    var cardH = Math.min(80, (H * 0.55) / beings.length - 14);
+    var cardGap = 12;
+    var totalH = beings.length * (cardH + cardGap) - cardGap;
+    var startY = (H - totalH) / 2;
+    var cardW = W - pad * 2;
+    var r = 18;
+    var fontSize = Math.min(26, cardH * 0.42);
+
+    beings.forEach(function (b, i) {
+      var y = startY + i * (cardH + cardGap);
+      ctx.fillStyle = COLORS[i] || fallback;
+      roundRect(ctx, pad, y, cardW, cardH, r);
+      ctx.fill();
+
+      ctx.fillStyle = cardTxt;
+      ctx.font = 'bold ' + fontSize + 'px "Frank Ruhl Libre", Georgia, serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(b, pad + cardW - 20, y + cardH / 2);
+    });
+
+    ctx.restore();
+
+    canvas.toBlob(function (blob) {
+      var file = new File([blob], 'havayot.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: 'הוויות היום' }).catch(function () {});
+      } else {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'havayot.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      }
+    }, 'image/png');
   }
 
   function renderLog() {
@@ -987,6 +1083,7 @@ window.Havayot = {
       case "save": return saveToday();
       case "cancel": return cancelEdit();
       case "edit": return startEdit();
+      case "save-wallpaper": return saveWallpaper(state.days[dayKey()]);
       case "quiet":
         document.body.classList.add("quiet");
         document.querySelector(".wake").focus();
