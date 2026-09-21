@@ -422,7 +422,10 @@ window.Havayot = {
       hint: "הוסף מילים",
       placeholder: "איך אני מממש את זה היום?",
       writeOn: "כתוב על ",
-      logEmpty: "עדיין אין ימים ביומן. אחרי שתשמור את חמש ההוויות של הבוקר, הן יופיעו כאן."
+      logEmpty: "עדיין אין ימים ביומן. אחרי שתשמור את חמש ההוויות של הבוקר, הן יופיעו כאן.",
+      wallSave: "📲 שמור כרקע",
+      wallHint: "📲 לחץ לחיצה ארוכה על התמונה ← שמור תמונה",
+      wallClose: "סגור"
     },
     f: {
       ask: "מי את בוחרת להיות היום?",
@@ -434,7 +437,10 @@ window.Havayot = {
       hint: "הוסיפי מילים",
       placeholder: "איך אני מממשת את זה היום?",
       writeOn: "כתבי על ",
-      logEmpty: "עדיין אין ימים ביומן. אחרי שתשמרי את חמש ההוויות של הבוקר, הן יופיעו כאן."
+      logEmpty: "עדיין אין ימים ביומן. אחרי שתשמרי את חמש ההוויות של הבוקר, הן יופיעו כאן.",
+      wallSave: "📲 שמרי כרקע",
+      wallHint: "📲 לחצי לחיצה ארוכה על התמונה ← שמור תמונה",
+      wallClose: "סגרי"
     }
   };
 
@@ -446,6 +452,7 @@ window.Havayot = {
   var DAY_STARTS_AT = 4; // a new day begins at 04:00, so a late night still belongs to the day before
   var K_DAYS = "havayot.days.v1";
   var K_SET = "havayot.settings.v1";
+  var K_OWNER = "havayot.owner.v1"; // whose days the local copy holds: an account id, or "" for this browser alone
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
   var app = document.getElementById("app");
@@ -510,10 +517,11 @@ window.Havayot = {
   /* ---------- the log and the settings live in this browser ---------- */
   function loadLocalSettings() {
     try {
+      var set = JSON.parse(localStorage.getItem(K_SET) || "{}");
+      if (set && (set.gender === "m" || set.gender === "f")) state.gender = set.gender;
     } catch (e) { /* private browsing, or storage turned off */ }
   }
-  function load() {
-    loadLocalSettings();
+  function loadLocalDays() {
     try {
       var raw = localStorage.getItem(K_DAYS);
       if (raw) {
@@ -525,12 +533,23 @@ window.Havayot = {
           });
         }
       }
-      var set = JSON.parse(localStorage.getItem(K_SET) || "{}");
-      if (set && (set.gender === "m" || set.gender === "f")) state.gender = set.gender;
     } catch (e) { /* private browsing, or storage turned off */ }
   }
+  function load() {
+    loadLocalSettings();
+    loadLocalDays();
+  }
+  function localOwner() {
+    try { return localStorage.getItem(K_OWNER) || ""; } catch (e) { return ""; }
+  }
   function mirror() {
-    try { localStorage.setItem(K_DAYS, JSON.stringify(state.days)); } catch (e) { /* nothing to do */ }
+    try {
+      localStorage.setItem(K_DAYS, JSON.stringify(state.days));
+      localStorage.setItem(K_OWNER, state.user ? state.user.uid : "");
+    } catch (e) { /* nothing to do */ }
+  }
+  function forgetLocalDays() {
+    try { localStorage.removeItem(K_DAYS); localStorage.removeItem(K_OWNER); } catch (e) { /* nothing to do */ }
   }
   function saveDays(key) {
     mirror();
@@ -636,9 +655,11 @@ window.Havayot = {
     state.busy = false;
     state.view = "today";     // signing in or out always lands on today
     if (!user) {
+      if (localOwner()) forgetLocalDays(); // no one is signed in, so no account's days stay in this browser
       state.days = {};
       state.gender = null;
       state.picks = emptyPicks();
+      wall = { key: "", blob: null, file: null };
       loadLocalSettings();          // the wording stays, the days do not
     } else if (user.uid !== was) {
       state.msg = null;
@@ -651,7 +672,8 @@ window.Havayot = {
       var e = normalize(remote[k]);
       if (e && DATE_RE.test(k)) merged[k] = e;
     });
-    if (firstTime) {                // days written before signing in move up to the account
+    var owner = localOwner();       // days written before signing in move up to the account,
+    if (firstTime && (!owner || (state.user && owner === state.user.uid))) { // never another account's
       Object.keys(state.days).forEach(function (k) {
         var mine = state.days[k], there = merged[k];
         if (!there || (mine.savedAt || "") > (there.savedAt || "")) {
@@ -901,7 +923,7 @@ window.Havayot = {
       noteHtml +
       '<div class="show-foot">' +
       '<button type="button" class="quiet-link" data-act="edit">' + esc(t().edit) + '</button>' +
-      '<button type="button" class="quiet-link" data-act="save-wallpaper">📲 שמור כרקע</button>' +
+      '<button type="button" class="quiet-link" data-act="save-wallpaper">' + esc(t().wallSave) + '</button>' +
       '<button type="button" class="quiet-link" data-act="quiet">מסך נקי</button>' +
       '</div></section>';
 
@@ -913,6 +935,7 @@ window.Havayot = {
         box.scrollIntoView({ block: "center" });
       }
     } else {
+      scheduleWallpaper();
       // auto-quiet after 2 seconds
       clearTimeout(window._autoQuiet);
       window._autoQuiet = setTimeout(function () {
@@ -937,207 +960,256 @@ window.Havayot = {
     ctx.closePath();
   }
 
-  function saveWallpaper(today) {
-    if (!today || !today.beings || !today.beings.length) return;
-    var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var bg      = isDark ? '#1C1829' : '#FAF8F6';
-    var muteClr = isDark ? '#9890A2' : '#857F8C';
-    var cardTxt = isDark ? '#2A1E3A' : '#35323C';
-    var noteClr = isDark ? 'rgba(42,30,58,0.72)' : 'rgba(53,50,60,0.62)';
-    var COLORS  = isDark
-      ? ['#AACCDE','#B8D4B0','#B8D4B0','#EAC8A8','#EAC8A8']
-      : ['#D6E6F2','#DCEBD9','#DCEBD9','#FAE4CE','#FAE4CE'];
-    var fallback = isDark ? '#C4B8DE' : '#E4DEF2';
+  /* ---------- the wallpaper ----------
+     the image is drawn ahead of time, so a tap on the button hands it to the share
+     sheet at once, while the tap still counts as the person's own action.
+     the cards keep to the part of the lock screen that iOS leaves open: below the
+     clock and above the flashlight and camera. measured on an iPhone lock screen,
+     in CSS pixels, which are the same as iOS points. */
+  var WALL_TOP = 228;      // the clock ends about 212 below the top edge, plus air
+  var WALL_BOTTOM = 132;   // the flashlight and camera start about 113 above the bottom edge, plus air
+  var WALL_SIDE = 24;
+  var WALL_TITLE_FONT = '"Frank Ruhl Libre", "David Libre", Georgia, serif';
+  var WALL_NOTE_FONT = '"IBM Plex Sans Hebrew", "Arial Hebrew", Arial, sans-serif';
+  var wall = { key: "", blob: null, file: null };
+  var wallTimer = null;
+
+  function darkScheme() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  function wallKey(today) {
+    return [dayKey(), darkScheme() ? "d" : "l", window.screen.width, window.screen.height,
+      window.devicePixelRatio || 2, today.beings.join("|"), JSON.stringify(today.notes || {})].join("~");
+  }
+
+  // the canvas draws with whatever font is ready, so both are asked for first, for at most a second and a half
+  function wallFonts() {
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    var sample = "אבגabc";
+    var ready = Promise.all([
+      document.fonts.load("700 20px " + WALL_TITLE_FONT, sample),
+      document.fonts.load("400 13px " + WALL_NOTE_FONT, sample)
+    ]).catch(function () { /* the fallback fonts will do */ });
+    return Promise.race([ready, new Promise(function (done) { setTimeout(done, 1500); })]);
+  }
+
+  // breaks on spaces, and inside a single word that is longer than one line
+  function wrapLines(ctx, text, maxW) {
+    var out = [], cur = "";
+    String(text).split(/\s+/).forEach(function (w) {
+      if (!w) return;
+      if (ctx.measureText(w).width > maxW) {
+        if (cur) { out.push(cur); cur = ""; }
+        var chunk = "";
+        Array.from(w).forEach(function (ch) {   // by code point, so an emoji is never split in two
+          if (chunk && ctx.measureText(chunk + ch).width > maxW) { out.push(chunk); chunk = ch; }
+          else chunk += ch;
+        });
+        cur = chunk;
+        return;
+      }
+      var test = cur ? cur + " " + w : w;
+      if (cur && ctx.measureText(test).width > maxW) { out.push(cur); cur = w; }
+      else cur = test;
+    });
+    if (cur) out.push(cur);
+    return out;
+  }
+
+  // every card is as tall as its own words: a being without a note does not
+  // take the room a long note needs, which is what lets every word fit
+  function wallLayout(ctx, today, W, s) {
+    var notes = today.notes || {};
+    var m = {
+      title: 21 * s, note: 13.5 * s, lineH: 18.5 * s,
+      padY: 13 * s, sep: 11 * s, gap: 10 * s, innerX: 18,
+      date: 13 * (W / 390) * Math.max(s, 0.85)   // the same size as before on every screen
+    };
+    m.titleH = m.title * 1.25;
+    m.dateH = m.date * 1.5 + m.gap;
+    var noteW = W - WALL_SIDE * 2 - m.innerX * 2;
+    ctx.font = m.note + "px " + WALL_NOTE_FONT;
+    var total = m.dateH;
+    var cards = today.beings.map(function (b, i) {
+      var lines = notes[b] ? wrapLines(ctx, notes[b], noteW) : [];
+      var body = m.titleH + (lines.length ? m.sep + lines.length * m.lineH : 0);
+      total += body + m.padY * 2 + (i ? m.gap : 0);
+      return { being: b, lines: lines, body: body, cut: false };
+    });
+    return { m: m, cards: cards, total: total, noteW: noteW };
+  }
+
+  // a last resort for notes longer than the text box allows (older ones, or ones from elsewhere)
+  function clipLayout(ctx, plan, room) {
+    var m = plan.m;
+    while (plan.total > room) {
+      var big = null;
+      plan.cards.forEach(function (c) { if (c.lines.length > 1 && (!big || c.lines.length > big.lines.length)) big = c; });
+      if (!big) break;
+      big.lines.pop();
+      big.cut = true;
+      big.body -= m.lineH;
+      plan.total -= m.lineH;
+    }
+    ctx.font = m.note + "px " + WALL_NOTE_FONT;
+    plan.cards.forEach(function (c) {
+      if (!c.cut) return;
+      var last = Array.from(c.lines[c.lines.length - 1]);
+      while (last.length > 1 && ctx.measureText(last.join("") + "…").width > plan.noteW) last.pop();
+      c.lines[c.lines.length - 1] = last.join("") + "…";
+    });
+  }
+
+  function drawWallpaper(today) {
+    var dark = darkScheme();
+    var bg = dark ? "#1C1829" : "#FAF8F6";
+    var muteClr = dark ? "#9890A2" : "#857F8C";
+    var cardTxt = dark ? "#2A1E3A" : "#35323C";
+    var noteClr = dark ? "rgba(42,30,58,0.72)" : "rgba(53,50,60,0.62)";
+    var sepClr = "rgba(53,50,60,0.12)";
+    var COLORS = dark
+      ? ["#AACCDE", "#B8D4B0", "#B8D4B0", "#EAC8A8", "#EAC8A8"]
+      : ["#D6E6F2", "#DCEBD9", "#DCEBD9", "#FAE4CE", "#FAE4CE"];
+    var fallback = dark ? "#C4B8DE" : "#E4DEF2";
 
     var dpr = window.devicePixelRatio || 2;
-    var sw  = window.screen.width  * dpr;
-    var sh  = window.screen.height * dpr;
-    var canvas = document.createElement('canvas');
-    canvas.width  = sw;
-    canvas.height = sh;
-    var ctx = canvas.getContext('2d');
-
-    // background
+    var W = window.screen.width, H = window.screen.height;
+    var canvas = document.createElement("canvas");
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    var ctx = canvas.getContext("2d");
     ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, sw, sh);
-
-    // work in logical pixels scaled by dpr
-    ctx.save();
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.scale(dpr, dpr);
-    var W = sw / dpr;
-    var H = sh / dpr;
-    var pad = 24;
+    ctx.direction = "rtl";          // Hebrew with punctuation or numbers keeps its order
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
 
-    // date
-    var dateStr = fmt(dayKey(), { weekday: 'long', day: 'numeric', month: 'long' });
-    ctx.fillStyle = muteClr;
-    ctx.font = (13 * (W / 390)) + 'px "IBM Plex Sans Hebrew", Arial, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
-    ctx.fillText(dateStr, W - pad, H * 0.07);
+    // the room the lock screen leaves open; on an unusually short screen it gives a little
+    var top = Math.min(WALL_TOP, H * 0.3);
+    var room = H - Math.min(WALL_BOTTOM, H * 0.15) - top;
 
-    // word-wrap helper — ctx font must be set before calling.
-    // breaks on spaces, and inside a single word that is longer than one line.
-    function wrapLines(text, maxW, maxL) {
-      if (!text) return [];
-      var out = [], cur = '';
-      function flush() { if (cur) { out.push(cur); cur = ''; } }
-      String(text).split(/\s+/).forEach(function (w) {
-        if (!w) return;
-        if (ctx.measureText(w).width > maxW) {   // one unbroken run, split it by character
-          flush();
-          var chunk = '';
-          for (var c = 0; c < w.length; c++) {
-            if (chunk && ctx.measureText(chunk + w[c]).width > maxW) { out.push(chunk); chunk = w[c]; }
-            else chunk += w[c];
-          }
-          cur = chunk;
-          return;
-        }
-        var test = cur ? cur + ' ' + w : w;
-        if (cur && ctx.measureText(test).width > maxW) { out.push(cur); cur = w; }
-        else cur = test;
-      });
-      flush();
-      if (maxL && out.length > maxL) {
-        out = out.slice(0, maxL);
-        var last = out[maxL - 1];
-        while (last.length > 1 && ctx.measureText(last + '…').width > maxW) last = last.slice(0, -1);
-        out[maxL - 1] = last + '…';
-      }
-      return out;
-    }
-
-    // cards
-    var beings   = today.beings;
-    var notes    = today.notes || {};
-    var hasNotes = beings.some(function(b) { return !!notes[b]; });
-
-    var cardGap  = 10;
-    var cardW    = W - pad * 2;
-    var innerPad = 18;
-    var noteMaxW = cardW - innerPad * 2;
-
-    // choose the largest type size at which every card still fits on the screen
-    var NOTE_FONT  = '"IBM Plex Sans Hebrew", Arial, sans-serif';
-    var TITLE_FONT = '"Frank Ruhl Libre", Georgia, serif';
-    var sepClr     = 'rgba(53,50,60,0.12)';
-    var maxBlockH  = H * 0.88;          // the five cards together never take more than this
-    var padTop = 13, sepGap = 11, padBot = 13, minCardH = 74;
-
-    var STEPS = [
-      { titleSize: 21, noteSize: 13.5, lineH: 18,   cap: 2 },
-      { titleSize: 20, noteSize: 13,   lineH: 17.5, cap: 3 },
-      { titleSize: 18, noteSize: 12,   lineH: 16,   cap: 4 },
-      { titleSize: 17, noteSize: 11,   lineH: 14.5, cap: 5 }
-    ];
-
+    // the largest type at which every word of every note fits, with nothing cut
     var plan = null;
-    for (var si = 0; si < STEPS.length; si++) {
-      var cand = STEPS[si];
-      var lastStep = si === STEPS.length - 1;   // the last one truncates rather than overflow
-      ctx.font = cand.noteSize + 'px ' + NOTE_FONT;
-      var linesBy = {}, maxLines = 0;
-      beings.forEach(function (b) {
-        var ls = notes[b] ? wrapLines(notes[b], noteMaxW, lastStep ? cand.cap : 0) : [];
-        linesBy[b] = ls;
-        if (ls.length > maxLines) maxLines = ls.length;
-      });
-      var titleH = cand.titleSize * 1.25;
-      var need = Math.max(minCardH, padTop + titleH + padBot + (maxLines ? sepGap + maxLines * cand.lineH : 0));
-      var total = beings.length * (need + cardGap) - cardGap;
-      if (lastStep || (maxLines <= cand.cap && total <= maxBlockH)) {
-        plan = {
-          step: cand, lines: linesBy, titleH: titleH,
-          cardH: Math.min(need, (maxBlockH + cardGap) / beings.length - cardGap)
-        };
-        break;
-      }
+    for (var step = 0; step <= 16; step++) {
+      plan = wallLayout(ctx, today, W, 1 - step * 0.025);
+      if (plan.total <= room) break;
     }
+    if (plan.total > room) clipLayout(ctx, plan, room);
 
-    var st     = plan.step;
-    var cardH  = plan.cardH;
-    var titleH = plan.titleH;
-    var totalH = beings.length * (cardH + cardGap) - cardGap;
-    var startY = (H - totalH) / 2;
-    var r      = 16;
+    var m = plan.m, n = plan.cards.length;
+    var grow = Math.max(0, Math.min((room - plan.total) / n, 44)); // spare room becomes air inside the cards
+    var y = top + (room - plan.total - grow * n) / 2;
 
-    beings.forEach(function (b, i) {
-      var lines = plan.lines[b] || [];
-      var y     = startY + i * (cardH + cardGap);
+    ctx.fillStyle = muteClr;
+    ctx.font = m.date + "px " + WALL_NOTE_FONT;
+    ctx.fillText(fmt(dayKey(), { weekday: "long", day: "numeric", month: "long" }), W - WALL_SIDE, y + m.date * 0.75);
+    y += m.dateH;
 
+    var cardW = W - WALL_SIDE * 2, xRight = W - WALL_SIDE - m.innerX;
+    plan.cards.forEach(function (c, i) {
+      var h = c.body + m.padY * 2 + grow;
       ctx.fillStyle = COLORS[i] || fallback;
-      roundRect(ctx, pad, y, cardW, cardH, r);
+      roundRect(ctx, WALL_SIDE, y, cardW, h, 16);
       ctx.fill();
 
-      ctx.textAlign    = 'right';
-      ctx.textBaseline = 'middle';
-      var xRight = pad + cardW - innerPad;
-
-      if (!lines.length) {                       // no note — the name sits in the middle
-        ctx.fillStyle = cardTxt;
-        ctx.font      = 'bold ' + st.titleSize + 'px ' + TITLE_FONT;
-        ctx.fillText(b, xRight, y + cardH / 2);
-        return;
-      }
-
-      // name, rule, note — as one block centred in the card
-      var blockH = titleH + sepGap + lines.length * st.lineH;
-      var top    = y + (cardH - blockH) / 2;
-
+      var at = y + (h - c.body) / 2;   // name, rule and note sit as one block in the middle of the card
       ctx.fillStyle = cardTxt;
-      ctx.font      = 'bold ' + st.titleSize + 'px ' + TITLE_FONT;
-      ctx.fillText(b, xRight, top + titleH / 2);
+      ctx.font = "bold " + m.title + "px " + WALL_TITLE_FONT;
+      ctx.fillText(c.being, xRight, at + m.titleH / 2);
 
-      ctx.strokeStyle = sepClr;
-      ctx.lineWidth   = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(pad + innerPad, top + titleH + sepGap / 2);
-      ctx.lineTo(pad + cardW - innerPad, top + titleH + sepGap / 2);
-      ctx.stroke();
+      if (c.lines.length) {
+        var ruleY = at + m.titleH + m.sep / 2;
+        ctx.strokeStyle = sepClr;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(WALL_SIDE + m.innerX, ruleY);
+        ctx.lineTo(xRight, ruleY);
+        ctx.stroke();
 
-      ctx.fillStyle = noteClr;
-      ctx.font      = st.noteSize + 'px ' + NOTE_FONT;
-      var noteTop = top + titleH + sepGap;
-      lines.forEach(function (line, li) {
-        ctx.fillText(line, xRight, noteTop + li * st.lineH + st.lineH / 2);
-      });
-    });
-
-    ctx.restore();
-
-    canvas.toBlob(function (blob) {
-      var file = new File([blob], 'havayot.png', { type: 'image/png' });
-
-      /* try native share sheet first (iOS: Shortcut appears as a target) */
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ files: [file], title: 'הוויות היום' }).catch(function () {});
-        return;
+        ctx.fillStyle = noteClr;
+        ctx.font = m.note + "px " + WALL_NOTE_FONT;
+        var noteTop = at + m.titleH + m.sep;
+        c.lines.forEach(function (line, li) {
+          ctx.fillText(line, xRight, noteTop + li * m.lineH + m.lineH / 2);
+        });
       }
+      y += h + m.gap;
+    });
+    return canvas;
+  }
 
-      /* fallback: show modal so user can long-press → Save Image */
-      var url = URL.createObjectURL(blob);
-      var overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.9rem;padding:1.2rem;';
+  function prepareWallpaper(today, done) {
+    if (!today || !today.beings || !today.beings.length) return;
+    var key = wallKey(today);
+    if (wall.key === key && wall.blob) { if (done) done(wall); return; }
+    wallFonts().then(function () {
+      drawWallpaper(today).toBlob(function (blob) {
+        if (!blob) return;
+        var file = null;
+        try { file = new File([blob], "havayot.png", { type: "image/png" }); } catch (e) { /* older browsers: the overlay still works */ }
+        wall = { key: key, blob: blob, file: file };
+        if (done) done(wall);
+      }, "image/png");
+    });
+  }
 
-      var img = document.createElement('img');
-      img.src = url;
-      img.style.cssText = 'max-width:100%;max-height:72vh;border-radius:16px;object-fit:contain;box-shadow:0 8px 32px rgba(0,0,0,.5);';
+  function scheduleWallpaper() {
+    clearTimeout(wallTimer);
+    wallTimer = setTimeout(function () {
+      if (screenKey.indexOf("show:") === 0) prepareWallpaper(state.days[dayKey()]);
+    }, 400);
+  }
 
-      var hint = document.createElement('p');
-      hint.textContent = '📲 לחצי לחיצה ארוכה על התמונה ← שמור תמונה';
-      hint.style.cssText = 'color:#fff;margin:0;text-align:center;font-size:1rem;opacity:.9;';
+  if (window.matchMedia) {             // light and dark draw different images
+    var scheme = window.matchMedia("(prefers-color-scheme: dark)");
+    if (scheme.addEventListener) scheme.addEventListener("change", scheduleWallpaper);
+    else if (scheme.addListener) scheme.addListener(scheduleWallpaper);
+  }
 
-      var closeBtn = document.createElement('button');
-      closeBtn.textContent = 'סגור';
-      closeBtn.style.cssText = 'color:#fff;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:.5rem 2rem;font-size:1rem;cursor:pointer;font-family:inherit;';
-      closeBtn.onclick = function () { document.body.removeChild(overlay); URL.revokeObjectURL(url); };
+  function saveWallpaper(today) {
+    // usually ready already, so the share sheet opens within the tap itself
+    prepareWallpaper(today, deliverWallpaper);
+  }
 
-      overlay.appendChild(img);
-      overlay.appendChild(hint);
-      overlay.appendChild(closeBtn);
-      document.body.appendChild(overlay);
-    }, 'image/png');
+  function deliverWallpaper(w) {
+    if (w.file && navigator.share && navigator.canShare && navigator.canShare({ files: [w.file] })) {
+      /* the native share sheet first (on iOS, a Shortcut can be a target) */
+      navigator.share({ files: [w.file], title: "הוויות היום" }).catch(function (err) {
+        var name = err && err.name;
+        if (name !== "AbortError" && name !== "InvalidStateError") showWallpaper(w.blob); // refused, not cancelled
+      });
+      return;
+    }
+    showWallpaper(w.blob);
+  }
+
+  /* the fallback: the image on its own, so a long press can save it */
+  function showWallpaper(blob) {
+    var url = URL.createObjectURL(blob);
+    var overlay = document.createElement("div");
+    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.9rem;padding:1.2rem;";
+
+    var img = document.createElement("img");
+    img.src = url;
+    img.alt = "";
+    img.style.cssText = "max-width:100%;max-height:72vh;border-radius:16px;object-fit:contain;box-shadow:0 8px 32px rgba(0,0,0,.5);";
+
+    var hint = document.createElement("p");
+    hint.textContent = t().wallHint;
+    hint.style.cssText = "color:#fff;margin:0;text-align:center;font-size:1rem;opacity:.9;";
+
+    var closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.textContent = t().wallClose;
+    closeBtn.style.cssText = "color:#fff;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:.5rem 2rem;font-size:1rem;cursor:pointer;font-family:inherit;";
+    closeBtn.onclick = function () { document.body.removeChild(overlay); URL.revokeObjectURL(url); };
+
+    overlay.appendChild(img);
+    overlay.appendChild(hint);
+    overlay.appendChild(closeBtn);
+    document.body.appendChild(overlay);
+    closeBtn.focus();
   }
 
   function renderLog() {
@@ -1255,9 +1327,11 @@ window.Havayot = {
   var K_SEEN = "havayot.seen.v1";
   var lastCheck = 0;
 
+  // only inline blocks count: scripts that arrive by src at run time (Firebase Auth adds
+  // some on phones) are not part of the file, and would make every check look like news
   function fingerprint(doc) {
     var parts = [];
-    Array.prototype.forEach.call(doc.querySelectorAll("style, script"), function (n) { parts.push(n.textContent); });
+    Array.prototype.forEach.call(doc.querySelectorAll("style, script:not([src])"), function (n) { parts.push(n.textContent); });
     var text = parts.join("\u0000"), h = 5381;
     for (var i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
     return h + "." + text.length;
