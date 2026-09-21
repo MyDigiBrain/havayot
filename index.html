@@ -1245,11 +1245,48 @@ window.Havayot = {
     render(true);
   }
   setInterval(checkDay, 30000);
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) checkDay(); });
-  window.addEventListener("focus", checkDay);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { checkDay(); checkForUpdate(); } });
+  window.addEventListener("focus", function () { checkDay(); checkForUpdate(); });
+
+  /* ---------- always run the newest version the server has ----------
+     the page is one file, so its own style and script blocks are its version.
+     on every opening it is fetched again, past the browser cache, and if it
+     differs from what is running here the page reloads itself.              */
+  var K_SEEN = "havayot.seen.v1";
+  var lastCheck = 0;
+
+  function fingerprint(doc) {
+    var parts = [];
+    Array.prototype.forEach.call(doc.querySelectorAll("style, script"), function (n) { parts.push(n.textContent); });
+    var text = parts.join("\u0000"), h = 5381;
+    for (var i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+    return h + "." + text.length;
+  }
+
+  function checkForUpdate() {
+    if (!window.fetch || !window.DOMParser) return;
+    var now = Date.now();
+    if (now - lastCheck < 60000) return;            // at most once a minute
+    lastCheck = now;
+    fetch(location.pathname + "?fresh=" + now, { cache: "no-store" })
+      .then(function (res) { return res.ok ? res.text() : null; })
+      .then(function (text) {
+        if (!text) return;
+        var there = fingerprint(new DOMParser().parseFromString(text, "text/html"));
+        if (there === fingerprint(document)) return;      // already the newest
+        var tried = null;
+        try { tried = sessionStorage.getItem(K_SEEN); } catch (e) { /* storage off */ }
+        if (tried === there) return;                      // tried once already, do not loop
+        try { sessionStorage.setItem(K_SEEN, there); } catch (e) { /* nothing to do */ }
+        if (state.editing || state.noteFor) return;       // never cut into writing, next time then
+        location.reload();
+      })
+      .catch(function () { /* offline: keep running what we have */ });
+  }
 
   load();
   render();
+  checkForUpdate();
   if (WANTS_CLOUD) setTimeout(function () { if (!state.authKnown) cloud.onDown(); }, 9000);
 })();
 </script>
