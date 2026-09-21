@@ -963,12 +963,16 @@ window.Havayot = {
   /* ---------- the wallpaper ----------
      the image is drawn ahead of time, so a tap on the button hands it to the share
      sheet at once, while the tap still counts as the person's own action.
-     the cards keep to the part of the lock screen that iOS leaves open: below the
-     clock and above the flashlight and camera. measured on an iPhone lock screen,
-     in CSS pixels, which are the same as iOS points. */
-  var WALL_TOP = 228;      // the clock ends about 212 below the top edge, plus air
-  var WALL_BOTTOM = 132;   // the flashlight and camera start about 113 above the bottom edge, plus air
-  var WALL_SIDE = 24;
+     the cards keep to the part of the lock screen that stays clear in every case:
+     right under the clock, above the flashlight and camera, and inside the frame that
+     stays on screen when iOS shows the picture enlarged (Spatial Scene, Perspective Zoom).
+     on the phone this was measured on, iOS enlarged it 1.19 times, kept the top edge in
+     place and pinned one side to the screen's edge; the layout allows for either side.
+     all in CSS pixels, which are the same as iOS points. */
+  var WALL_CLOCK = 212;    // the clock ends this far below the top edge
+  var WALL_BUTTONS = 114;  // the flashlight and camera start this far above the bottom edge
+  var WALL_AIR = 14;       // space kept from the clock, the buttons and the screen's sides
+  var WALL_ZOOM = 1.2;     // the enlargement the layout survives; 1 turns the allowance off
   var WALL_TITLE_FONT = '"Frank Ruhl Libre", "David Libre", Georgia, serif';
   var WALL_NOTE_FONT = '"IBM Plex Sans Hebrew", "Arial Hebrew", Arial, sans-serif';
   var wall = { key: "", blob: null, file: null };
@@ -1018,16 +1022,16 @@ window.Havayot = {
 
   // every card is as tall as its own words: a being without a note does not
   // take the room a long note needs, which is what lets every word fit
-  function wallLayout(ctx, today, W, s) {
+  function wallLayout(ctx, today, W, colW, s) {
     var notes = today.notes || {};
     var m = {
       title: 21 * s, note: 13.5 * s, lineH: 18.5 * s,
-      padY: 13 * s, sep: 11 * s, gap: 10 * s, innerX: 18,
+      padY: 13 * s, sep: 11 * s, gap: 10 * s, innerX: 16,
       date: 13 * (W / 390) * Math.max(s, 0.85)   // the same size as before on every screen
     };
     m.titleH = m.title * 1.25;
     m.dateH = m.date * 1.5 + m.gap;
-    var noteW = W - WALL_SIDE * 2 - m.innerX * 2;
+    var noteW = colW - m.innerX * 2;
     ctx.font = m.note + "px " + WALL_NOTE_FONT;
     var total = m.dateH;
     var cards = today.beings.map(function (b, i) {
@@ -1085,32 +1089,37 @@ window.Havayot = {
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
 
-    // the room the lock screen leaves open; on an unusually short screen it gives a little
-    var top = Math.min(WALL_TOP, H * 0.3);
-    var room = H - Math.min(WALL_BOTTOM, H * 0.15) - top;
+    // the frame that stays clear with and without the enlargement; on an unusually short
+    // screen the clock and buttons give a little
+    var z = Math.max(1, WALL_ZOOM);
+    var top = Math.min(WALL_CLOCK, H * 0.25) + WALL_AIR;                   // right under the clock
+    var bottom = (H - Math.min(WALL_BUTTONS, H * 0.15) - WALL_AIR) / z;   // the top stays, so enlarging pushes down
+    var left = W - W / z + WALL_AIR / z;                                   // clear whichever side iOS pins
+    var right = (W - WALL_AIR) / z;
+    var colW = right - left, room = bottom - top;
 
     // the largest type at which every word of every note fits, with nothing cut
     var plan = null;
-    for (var step = 0; step <= 16; step++) {
-      plan = wallLayout(ctx, today, W, 1 - step * 0.025);
+    for (var step = 0; step <= 18; step++) {
+      plan = wallLayout(ctx, today, W, colW, 1 - step * 0.025);
       if (plan.total <= room) break;
     }
     if (plan.total > room) clipLayout(ctx, plan, room);
 
     var m = plan.m, n = plan.cards.length;
     var grow = Math.max(0, Math.min((room - plan.total) / n, 44)); // spare room becomes air inside the cards
-    var y = top + (room - plan.total - grow * n) / 2;
+    var y = top;
 
     ctx.fillStyle = muteClr;
     ctx.font = m.date + "px " + WALL_NOTE_FONT;
-    ctx.fillText(fmt(dayKey(), { weekday: "long", day: "numeric", month: "long" }), W - WALL_SIDE, y + m.date * 0.75);
+    ctx.fillText(fmt(dayKey(), { weekday: "long", day: "numeric", month: "long" }), right, y + m.date * 0.75);
     y += m.dateH;
 
-    var cardW = W - WALL_SIDE * 2, xRight = W - WALL_SIDE - m.innerX;
+    var xRight = right - m.innerX;
     plan.cards.forEach(function (c, i) {
       var h = c.body + m.padY * 2 + grow;
       ctx.fillStyle = COLORS[i] || fallback;
-      roundRect(ctx, WALL_SIDE, y, cardW, h, 16);
+      roundRect(ctx, left, y, colW, h, 14);
       ctx.fill();
 
       var at = y + (h - c.body) / 2;   // name, rule and note sit as one block in the middle of the card
@@ -1123,7 +1132,7 @@ window.Havayot = {
         ctx.strokeStyle = sepClr;
         ctx.lineWidth = 0.8;
         ctx.beginPath();
-        ctx.moveTo(WALL_SIDE + m.innerX, ruleY);
+        ctx.moveTo(left + m.innerX, ruleY);
         ctx.lineTo(xRight, ruleY);
         ctx.stroke();
 
