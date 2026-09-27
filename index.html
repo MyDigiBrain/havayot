@@ -294,6 +294,11 @@
   .settings h2 { font-family: var(--ui); font-size: .95rem; font-weight: 600; color: var(--muted); margin: 1.8rem 0 .6rem; }
   .settings .choices { flex-direction: row; flex-wrap: wrap; }
   .settings .choice { width: auto; flex: 1 1 9rem; text-align: center; }
+  .settings .themes .choice { flex: 1 1 6rem; font-size: 1rem; padding: .85rem .8rem; }
+  .settings .themes .choice:nth-child(1) { background: var(--p4); }
+  .settings .themes .choice:nth-child(2) { background: var(--p3); }
+  .settings .themes .choice:nth-child(3) { background: var(--p6); }
+  .lede.small { font-size: .9rem; margin: .7rem 0 0; }
 
   /* sign in */
   .gate .nav { display: none; }
@@ -452,6 +457,7 @@ window.Havayot = {
   var DAY_STARTS_AT = 4; // a new day begins at 04:00, so a late night still belongs to the day before
   var K_DAYS = "havayot.days.v1";
   var K_SET = "havayot.settings.v1";
+  var THEMES = ["auto", "light", "dark"];
   var K_OWNER = "havayot.owner.v1"; // whose days the local copy holds: an account id, or "" for this browser alone
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -460,6 +466,7 @@ window.Havayot = {
 
   var state = {
     days: {},        // "YYYY-MM-DD" -> { beings: [..], notes: {being: text}, savedAt: iso }
+    theme: "auto",  // "auto" follows the phone; "light" and "dark" are fixed
     gender: null,    // "m" | "f", chosen once and changeable in settings
     picks: [null, null, null, null, null], // one slot per tone, so each of the five gets its own
     editing: false,
@@ -519,6 +526,8 @@ window.Havayot = {
     try {
       var set = JSON.parse(localStorage.getItem(K_SET) || "{}");
       if (set && (set.gender === "m" || set.gender === "f")) state.gender = set.gender;
+      if (set && THEMES.indexOf(set.theme) >= 0) state.theme = set.theme;
+      applyTheme();
     } catch (e) { /* private browsing, or storage turned off */ }
   }
   function loadLocalDays() {
@@ -556,8 +565,28 @@ window.Havayot = {
     if (state.user && cloud.api && key && state.days[key]) cloud.api.putDay(key, state.days[key]);
   }
   function saveSettings() {
-    try { localStorage.setItem(K_SET, JSON.stringify({ gender: state.gender })); } catch (e) { /* nothing to do */ }
-    if (state.user && cloud.api) cloud.api.putSettings({ gender: state.gender });
+    try { localStorage.setItem(K_SET, JSON.stringify({ gender: state.gender, theme: state.theme })); } catch (e) { /* nothing to do */ }
+    if (state.user && cloud.api) cloud.api.putSettings({ gender: state.gender, theme: state.theme });
+  }
+
+  // "auto" leaves the attribute off, so the media query in the stylesheet decides
+  function applyTheme() {
+    var root = document.documentElement;
+    if (state.theme === "auto") root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", state.theme);
+    var fixed = state.theme === "dark" ? "#1C1829" : (state.theme === "light" ? "#FAF8F6" : null);
+    Array.prototype.forEach.call(document.querySelectorAll('meta[name="theme-color"]'), function (m) {
+      if (!m.dataset.media) m.dataset.media = m.getAttribute("media") || "";
+      if (fixed) { m.setAttribute("content", fixed); m.removeAttribute("media"); }
+      else if (m.dataset.media) m.setAttribute("media", m.dataset.media);
+    });
+  }
+  function setTheme(v) {
+    if (THEMES.indexOf(v) < 0 || v === state.theme) return;
+    state.theme = v;
+    applyTheme();
+    saveSettings();
+    render(true);
   }
 
   /* ---------- actions ---------- */
@@ -687,11 +716,15 @@ window.Havayot = {
     render(true);
   };
   cloud.onSettings = function (set, firstTime) {
+    if (set && THEMES.indexOf(set.theme) >= 0 && set.theme !== state.theme) {
+      state.theme = set.theme;
+      applyTheme();
+    }
     if (set && (set.gender === "m" || set.gender === "f")) {
       state.gender = set.gender;
-      try { localStorage.setItem(K_SET, JSON.stringify({ gender: state.gender })); } catch (e) { /* nothing to do */ }
+      try { localStorage.setItem(K_SET, JSON.stringify({ gender: state.gender, theme: state.theme })); } catch (e) { /* nothing to do */ }
     } else if (firstTime && state.gender && cloud.api) {
-      cloud.api.putSettings({ gender: state.gender });
+      cloud.api.putSettings({ gender: state.gender, theme: state.theme });
     }
     render(true);
   };
@@ -764,7 +797,7 @@ window.Havayot = {
     if (needsAuth && !state.authKnown) key = "wait:";
     else if (needsAuth && !state.user) key = "auth:" + state.authMode + state.busy + JSON.stringify(state.msg);
     else if (!state.gender) key = "setup:";
-    else if (state.view === "settings") key = "settings:" + state.gender + (state.user ? state.user.email : "-") + state.cloudDown;
+    else if (state.view === "settings") key = "settings:" + state.gender + state.theme + (state.user ? state.user.email : "-") + state.cloudDown;
     else if (state.view === "log") key = "log:" + state.gender + (state.user ? "u" : "-") + JSON.stringify(state.days);
     else if (today && !state.editing) key = "show:" + state.gender + today.beings.join("|") + JSON.stringify(today.notes) + state.noteFor;
     else key = "choose:" + state.gender + state.editing;
@@ -840,8 +873,16 @@ window.Havayot = {
         ? "החיבור לחשבון לא עלה כרגע, והנתונים נשמרים בדפדפן הזה בלבד."
         : "הבחירה היומית והמילים נשמרות בדפדפן הזה בלבד, על המכשיר שלך. מחיקת נתוני הדפדפן תמחק גם אותן.");
 
+    var themeNames = { auto: "לפי המכשיר", light: "בהיר", dark: "כהה" };
+    var themeButtons = '<div class="choices themes">' + THEMES.map(function (v) {
+      return '<button type="button" class="choice" data-act="theme" data-theme="' + v + '" aria-pressed="' +
+        (state.theme === v) + '">' + themeNames[v] + "</button>";
+    }).join("") + "</div>";
+
     app.innerHTML = '<section class="page settings"><h1>הגדרות</h1>' +
       "<h2>לשון פנייה</h2>" + genderButtons() +
+      "<h2>מראה</h2>" + themeButtons +
+      '<p class="lede small">התמונה שנשמרת כרקע תמיד כהה, כדי שלא תסנוור במסך הנעילה בלילה.</p>' +
       account +
       "<h2>איפה נשמרים הנתונים</h2>" +
       '<p class="lede">' + esc(where) + "</p></section>";
@@ -979,10 +1020,10 @@ window.Havayot = {
   var wallTimer = null;
 
   function darkScheme() {
-    return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    return true;   // the wallpaper sits on the lock screen at night, so it is drawn dark whatever the phone is set to
   }
   function wallKey(today) {
-    return [dayKey(), darkScheme() ? "d" : "l", window.screen.width, window.screen.height,
+    return [dayKey(), "d", window.screen.width, window.screen.height,
       window.devicePixelRatio || 2, today.beings.join("|"), JSON.stringify(today.notes || {})].join("~");
   }
 
@@ -1170,12 +1211,6 @@ window.Havayot = {
     }, 400);
   }
 
-  if (window.matchMedia) {             // light and dark draw different images
-    var scheme = window.matchMedia("(prefers-color-scheme: dark)");
-    if (scheme.addEventListener) scheme.addEventListener("change", scheduleWallpaper);
-    else if (scheme.addListener) scheme.addListener(scheduleWallpaper);
-  }
-
   function saveWallpaper(today) {
     // usually ready already, so the share sheet opens within the tap itself
     prepareWallpaper(today, deliverWallpaper);
@@ -1276,6 +1311,7 @@ window.Havayot = {
     if (t2.dataset.being) return togglePick(t2.dataset.being);
     switch (t2.dataset.act) {
       case "gender": return setGender(t2.dataset.gender);
+      case "theme": return setTheme(t2.dataset.theme);
       case "auth-google": return authGoogle();
       case "auth-go": return authSubmit();
       case "auth-reset": return authReset();
