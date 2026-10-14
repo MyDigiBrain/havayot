@@ -95,7 +95,7 @@
     flex: none;
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 1rem;
     width: 100%;
     max-width: 44rem;
@@ -104,7 +104,7 @@
     transition: opacity .4s ease;
   }
   .brand { font-family: var(--display); font-weight: 700; font-size: 1.3rem; margin: 0; }
-  .nav { display: flex; gap: 1.2rem; }
+  .nav { display: flex; gap: 1.15rem; flex-wrap: wrap; }
   .nav button {
     padding: .35rem 0;
     color: var(--muted);
@@ -297,6 +297,90 @@
   .empty, .where { color: var(--muted); }
   .where { font-size: .9rem; margin: 2rem 0 0; }
 
+  /* Clearday */
+  .cd { padding-bottom: 3rem; }
+  .cd .lede { margin-bottom: 1rem; }
+  .cd-open {
+    background: var(--p5);
+    color: var(--on-pastel);
+    border-radius: 18px;
+    padding: .85rem 1.1rem;
+    margin: 0 0 1.6rem;
+    font-size: .97rem;
+    line-height: 1.55;
+  }
+  .cd-list { list-style: none; margin: 0; padding: 0; }
+  .cd-item + .cd-item { margin-top: 1.5rem; }
+  .cd-q {
+    font-family: var(--display);
+    font-size: 1.18rem;
+    font-weight: 500;
+    line-height: 1.4;
+    margin: 0 0 .5rem;
+  }
+  .cd-n {
+    display: inline-block;
+    min-width: 1.5rem;
+    color: var(--muted);
+    font-family: var(--ui);
+    font-size: .9rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .cd-hint {
+    display: block;
+    margin-inline-start: 1.5rem;
+    font-family: var(--ui);
+    font-size: .85rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .cd-box {
+    display: block;
+    width: 100%;
+    min-height: 3.25rem;
+    padding: .7rem .85rem;
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--ink);
+    background: var(--field);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    direction: rtl;
+    text-align: right;
+    resize: none;
+    overflow: hidden;
+  }
+  .cd-box:focus { outline: 2px solid var(--p5); outline-offset: 1px; }
+  .cd-beings { list-style: none; margin: 0 0 .5rem; padding: 0; display: flex; flex-wrap: wrap; gap: .4rem; }
+  .cd-beings li {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    background: var(--tint);
+    color: var(--on-pastel);
+    border-radius: 999px;
+    padding: .3rem .85rem .35rem;
+    font-family: var(--display);
+    font-size: 1.1rem;
+  }
+  .cd-beings .mk { width: .95rem; height: .95rem; opacity: .75; }
+  .cd-empty { color: var(--muted); font-size: .95rem; margin: 0; }
+  .cd-foot { color: var(--muted); font-size: .9rem; margin: 2.2rem 0 0; }
+
+  .cd-more {
+    display: inline-block;
+    margin-top: .7rem;
+    padding: .35rem .8rem .4rem;
+    background: var(--p5);
+    color: var(--on-pastel);
+    border-radius: 999px;
+    font-size: .88rem;
+  }
+  .cd-read { margin-top: .7rem; padding-top: .3rem; border-top: 1px solid var(--line); }
+  .cd-rq { font-size: .88rem; color: var(--muted); margin: .7rem 0 .1rem; }
+  .what.quiet { font-family: var(--ui); font-size: .95rem; color: var(--muted); font-weight: 400; }
+
   /* settings */
   .settings h2 { font-family: var(--ui); font-size: .95rem; font-weight: 600; color: var(--muted); margin: 1.8rem 0 .6rem; }
   .settings .choices { flex-direction: row; flex-wrap: wrap; }
@@ -305,8 +389,8 @@
   .settings .themes .choice:nth-child(1) { background: var(--p4); }
   .settings .themes .choice:nth-child(2) { background: var(--p3); }
   .settings .themes .choice:nth-child(3) { background: var(--p6); }
-  .settings .marks .choice:nth-child(1) { background: var(--p1); }
-  .settings .marks .choice:nth-child(2) { background: var(--p5); }
+  .settings .marks .choice:nth-child(1) { background: var(--p5); }
+  .settings .marks .choice:nth-child(2) { background: var(--p1); }
   .lede.small { font-size: .9rem; margin: .7rem 0 0; }
 
   /* sign in */
@@ -365,9 +449,9 @@
 </head>
 <body>
 <header class="top">
-  <p class="brand">הוויות</p>
   <nav class="nav" aria-label="ניווט">
-    <button type="button" data-view="today">היום</button>
+    <button type="button" data-view="today">הוויות</button>
+    <button type="button" data-view="clearday">Clearday</button>
     <button type="button" data-view="log">יומן</button>
     <button type="button" data-view="settings">הגדרות</button>
   </nav>
@@ -544,6 +628,23 @@ window.Havayot = {
   var cloud = window.Havayot;              // the bridge; the Firebase module fills cloud.api
   var WANTS_CLOUD = cloud && cloud.configured;
 
+  // Clearday, stage two of the model: ten fixed questions, answered in the morning.
+  // "same" marks a question whose wording fits both; q5 is answered by the day's beings.
+  var QUESTIONS = [
+    { id: "q1", m: "מה שלומי עכשיו?" },
+    { id: "q2", m: "מה התחושות שיש לי כרגע?" },
+    { id: "q3", m: "ממה אני מוטרד או מודאג?", f: "ממה אני מוטרדת או מודאגת?", hint: "לכתוב ולהניח בצד" },
+    { id: "q4", m: "מה חשוב לי להביא היום לעולם?", hint: "שאלה הוויתית, ערכית" },
+    { id: "q5", m: "כאשר יפגשו בי, איזה אדם יפגשו?", beings: true },
+    { id: "q6", m: "האם אני אדם ששווה להיות בסביבה שלו היום?", f: "האם אני אדם ששווה להיות בסביבה שלה היום?" },
+    { id: "q7", m: "האם יש פעולות שחשוב לי לממש היום?" },
+    { id: "q8", m: "מה ישתבש או מה ימנע ממני להיות בהוויות שבחרתי?" },
+    { id: "q9", m: "איך אתמוך בעצמי כדי שאשאר בהוויות שבחרתי?" },
+    { id: "q10", m: "אני מברך את עצמי, מברך את משפחתי ומוקיר את...",
+      f: "אני מברכת את עצמי, מברכת את משפחתי ומוקירה את..." }
+  ];
+  var OPENING = "רגע לפני: ישיבה שקטה של כמה דקות, הסדרת הנשימה, ותשומת לב לקצב הלב ולתחושות שעולות בגוף.";
+
   var MAX = 5;
   var BREATH = 20;  // "נושם" / "נושמת" — the same position in both lists, kept as the first by default
   var DAY_STARTS_AT = 4; // a new day begins at 04:00, so a late night still belongs to the day before
@@ -559,11 +660,12 @@ window.Havayot = {
   var state = {
     days: {},        // "YYYY-MM-DD" -> { beings: [..], notes: {being: text}, savedAt: iso }
     theme: "auto",  // "auto" follows the phone; "light" and "dark" are fixed
-    marks: false,   // the abstract mark beside each being, off unless the person turns it on
+    marks: true,    // the abstract icon beside each being; on by default, switchable in settings
     gender: null,    // "m" | "f", chosen once and changeable in settings
     picks: [null, null, null, null, null], // one slot per tone, so each of the five gets its own
     editing: false,
     noteFor: null,
+    openDays: {},   // which past days in the log have their Clearday answers open
     view: "today",
     user: null,          // the signed-in account, when there is one
     authKnown: !WANTS_CLOUD,
@@ -590,6 +692,7 @@ window.Havayot = {
     });
   }
   function t() { return TEXT[state.gender || "m"]; }
+  function ask(q) { return (state.gender === "f" && q.f) ? q.f : q.m; }
   function beings() { return LIST[state.gender || "m"]; }
   var GROUP = ["--p5", "--p4", "--p4", "--p2", "--p2"]; // breath, accessible, accessible, challenging, challenging
   function tintAt(slot) { return "var(" + (GROUP[slot] || "--p6") + ")"; }
@@ -601,9 +704,10 @@ window.Havayot = {
   }
   function picked() { return state.picks.filter(Boolean); }
   function normalize(v) {
-    if (!v || !Array.isArray(v.beings)) return null;
-    var list = v.beings.filter(function (b) { return typeof b === "string" && b && b.length < 40; }).slice(0, MAX);
-    if (!list.length) return null;
+    if (!v || typeof v !== "object") return null;
+    var list = Array.isArray(v.beings)
+      ? v.beings.filter(function (b) { return typeof b === "string" && b && b.length < 40; }).slice(0, MAX)
+      : [];
     var notes = {};
     if (v.notes && typeof v.notes === "object") {
       list.forEach(function (b) {
@@ -611,7 +715,16 @@ window.Havayot = {
         if (typeof x === "string" && x.trim()) notes[b] = x.slice(0, 2000);
       });
     }
-    return { beings: list, notes: notes, savedAt: typeof v.savedAt === "string" ? v.savedAt : "" };
+    var cd = {};                       // the Clearday answers, keyed by question id
+    if (v.clearday && typeof v.clearday === "object") {
+      QUESTIONS.forEach(function (q) {
+        var x = v.clearday[q.id];
+        if (typeof x === "string" && x.trim()) cd[q.id] = x.slice(0, 4000);
+      });
+    }
+    // a day exists once it holds either a choice of beings or a written answer
+    if (!list.length && !Object.keys(cd).length) return null;
+    return { beings: list, notes: notes, clearday: cd, savedAt: typeof v.savedAt === "string" ? v.savedAt : "" };
   }
 
   /* ---------- the log and the settings live in this browser ---------- */
@@ -737,7 +850,7 @@ window.Havayot = {
     var key = dayKey();
     var prev = state.days[key], kept = {};
     if (prev && prev.notes) list.forEach(function (b) { if (prev.notes[b]) kept[b] = prev.notes[b]; });
-    state.days[key] = { beings: list, notes: kept, savedAt: new Date().toISOString() };
+    state.days[key] = { beings: list, notes: kept, clearday: (prev && prev.clearday) || {}, savedAt: new Date().toISOString() };
     saveDays(key);
     state.picks = emptyPicks();
     state.editing = false;
@@ -812,6 +925,11 @@ window.Havayot = {
         }
       });
     }
+    // an answer being typed right now must not be wiped by an echo of an earlier save
+    if (cdPending && state.days[cdPending]) {
+      var live = state.days[cdPending], onServer = merged[cdPending];
+      if (!onServer || (live.savedAt || "") > (onServer.savedAt || "")) merged[cdPending] = live;
+    }
     state.days = merged;
     mirror();
     render(true);
@@ -881,6 +999,43 @@ window.Havayot = {
     cloud.api.reset(email);
   }
 
+  /* ---------- Clearday ---------- */
+  var cdTimer = null, cdPending = null, cdFocus = null;
+
+  function cdAnswers() {
+    var day = state.days[dayKey()];
+    return (day && day.clearday) || {};
+  }
+  // typing writes locally at once and reaches the account a moment after the last keystroke
+  function cdType(id, text) {
+    var key = dayKey();
+    var day = state.days[key];
+    if (!day) day = state.days[key] = { beings: [], notes: {}, clearday: {}, savedAt: new Date().toISOString() };
+    if (!day.clearday) day.clearday = {};
+    text = text.slice(0, 4000);
+    if (text.trim()) day.clearday[id] = text;
+    else delete day.clearday[id];
+    day.savedAt = new Date().toISOString();
+    mirror();
+    cdPending = key;
+    clearTimeout(cdTimer);
+    cdTimer = setTimeout(cdFlush, 1200);
+  }
+  function cdFlush() {
+    clearTimeout(cdTimer);
+    var key = cdPending;
+    cdPending = null;
+    if (key && state.user && cloud.api && state.days[key]) cloud.api.putDay(key, state.days[key]);
+  }
+  // nothing is lost when the page is closed or hidden mid-sentence
+  document.addEventListener("visibilitychange", function () { if (document.hidden) cdFlush(); });
+  window.addEventListener("pagehide", cdFlush);
+
+  function grow(box) {
+    box.style.height = "auto";
+    box.style.height = Math.max(box.scrollHeight, 52) + "px";
+  }
+
   /* ---------- rendering ---------- */
   var screenKey = "";
 
@@ -899,9 +1054,12 @@ window.Havayot = {
     if (needsAuth && !state.authKnown) key = "wait:";
     else if (needsAuth && !state.user) key = "auth:" + state.authMode + state.busy + JSON.stringify(state.msg);
     else if (!state.gender) key = "setup:";
+    else if (state.view === "clearday") key = "clearday:" + state.marks + state.gender +
+      ((today && today.beings) || []).join("|") + Object.keys(((today && today.clearday) || {})).join(",");
     else if (state.view === "settings") key = "settings:" + state.gender + state.theme + state.marks + (state.user ? state.user.email : "-") + state.cloudDown;
-    else if (state.view === "log") key = "log:" + state.gender + (state.user ? "u" : "-") + JSON.stringify(state.days);
-    else if (today && !state.editing) key = "show:" + state.marks + state.gender + today.beings.join("|") + JSON.stringify(today.notes) + state.noteFor;
+    else if (state.view === "log") key = "log:" + state.gender + (state.user ? "u" : "-") +
+      JSON.stringify(state.openDays) + JSON.stringify(state.days);
+    else if (today && today.beings.length && !state.editing) key = "show:" + state.marks + state.gender + today.beings.join("|") + JSON.stringify(today.notes) + state.noteFor;
     else key = "choose:" + state.marks + state.gender + state.editing;
 
     if (key.indexOf("show:") !== 0) { document.body.classList.remove("quiet"); state.noteFor = null; }
@@ -909,7 +1067,14 @@ window.Havayot = {
     if (!force && key === screenKey) { if (key.indexOf("choose:") === 0) updateChoose(); return; }
     screenKey = key;
 
-    if (key.indexOf("wait:") === 0) app.innerHTML = '<section class="page spinner"><p>רגע, מתחבר לחשבון...</p></section>';
+    if (key.indexOf("clearday:") === 0) {
+      var on = document.activeElement;
+      if (on && on.classList && on.classList.contains("cd-box")) {
+        cdFocus = { q: on.dataset.q, at: on.selectionStart };
+      }
+      renderClearday();
+    }
+    else if (key.indexOf("wait:") === 0) app.innerHTML = '<section class="page spinner"><p>רגע, מתחבר לחשבון...</p></section>';
     else if (key.indexOf("auth:") === 0) renderAuth();
     else if (key.indexOf("setup:") === 0) renderSetup();
     else if (key.indexOf("settings:") === 0) renderSettings();
@@ -962,6 +1127,49 @@ window.Havayot = {
       genderButtons() + "</section>";
   }
 
+  function renderClearday() {
+    var key = dayKey();
+    var day = state.days[key];
+    var answers = (day && day.clearday) || {};
+    var chosen = (day && day.beings) || [];
+
+    var items = QUESTIONS.map(function (q, i) {
+      var body;
+      if (q.beings) {
+        body = chosen.length
+          ? '<ul class="cd-beings">' + chosen.map(function (b, j) {
+              return '<li style="--tint:' + tintAt(j) + '">' + markSvg(b) + "<span>" + esc(b) + "</span></li>";
+            }).join("") + "</ul>" +
+            '<button type="button" class="quiet-link" data-act="go-beings">' + esc(t().edit) + "</button>"
+          : '<p class="cd-empty">עוד לא נבחרו הוויות להיום. ' +
+            '<button type="button" class="quiet-link" data-act="go-beings">לבחירת ההוויות</button></p>';
+      } else {
+        body = '<textarea class="cd-box" data-q="' + q.id + '" rows="2" maxlength="4000" ' +
+          'aria-label="' + esc(ask(q)) + '">' + esc(answers[q.id] || "") + "</textarea>";
+      }
+      return '<li class="cd-item"><p class="cd-q"><span class="cd-n">' + (i + 1) + "</span>" + esc(ask(q)) +
+        (q.hint ? '<span class="cd-hint">' + esc(q.hint) + "</span>" : "") + "</p>" + body + "</li>";
+    }).join("");
+
+    app.innerHTML = '<section class="page cd">' +
+      "<h1>Clearday</h1>" +
+      '<p class="lede">' + esc(fmt(key, { weekday: "long", day: "numeric", month: "long" })) + "</p>" +
+      '<p class="cd-open">' + esc(OPENING) + "</p>" +
+      '<ol class="cd-list">' + items + "</ol>" +
+      '<p class="cd-foot">נשמר מעצמו תוך כדי כתיבה. אפשר לחזור ולהוסיף במהלך היום.</p>' +
+      "</section>";
+
+    Array.prototype.forEach.call(app.querySelectorAll(".cd-box"), grow);
+    if (cdFocus) {                      // a redraw mid-sentence keeps the caret where it was
+      var back = app.querySelector('.cd-box[data-q="' + cdFocus.q + '"]');
+      if (back) {
+        back.focus();
+        try { back.setSelectionRange(cdFocus.at, cdFocus.at); } catch (e) { /* older browsers */ }
+      }
+      cdFocus = null;
+    }
+  }
+
   function renderSettings() {
     var account = "";
     if (state.user) {
@@ -981,17 +1189,17 @@ window.Havayot = {
         (state.theme === v) + '">' + themeNames[v] + "</button>";
     }).join("") + "</div>";
 
-    var markNames = { off: "בלי סימנים", on: "סימנים מופשטים" };
+    var markNames = { off: "בלי אייקונים", on: "אייקונים מופשטים" };
     var markButtons = '<div class="choices marks">' +
-      '<button type="button" class="choice" data-act="marks" data-marks="off" aria-pressed="' + (!state.marks) + '">' + markNames.off + "</button>" +
       '<button type="button" class="choice" data-act="marks" data-marks="on" aria-pressed="' + (!!state.marks) + '">' + markNames.on + "</button>" +
+      '<button type="button" class="choice" data-act="marks" data-marks="off" aria-pressed="' + (!state.marks) + '">' + markNames.off + "</button>" +
       "</div>";
 
     app.innerHTML = '<section class="page settings"><h1>הגדרות</h1>' +
       "<h2>לשון פנייה</h2>" + genderButtons() +
       "<h2>מראה</h2>" + themeButtons +
-      "<h2>סימנים</h2>" + markButtons +
-      '<p class="lede small">סימן גאומטרי לצד כל הוויה, מתוך אוצר צורות אחד. הוא עוזר לזהות ולזכור, ואינו אומר דבר על משמעות ההוויה.</p>' +
+      "<h2>אייקונים</h2>" + markButtons +
+      '<p class="lede small">אייקון גאומטרי לצד כל הוויה, מתוך אוצר צורות אחד. הוא עוזר לזהות ולזכור, ואינו אומר דבר על משמעות ההוויה.</p>' +
       '<p class="lede small">התמונה שנשמרת כרקע תמיד כהה, כדי שלא תסנוור במסך הנעילה בלילה.</p>' +
       account +
       "<h2>איפה נשמרים הנתונים</h2>" +
@@ -1398,17 +1606,32 @@ window.Havayot = {
           month = m;
           html += '<div class="month"><h2>' + esc(fmt(k, { month: "long", year: "numeric" })) + "</h2><ol>";
         }
-        var day = state.days[k], dayNotes = day.notes || {};
+        var day = state.days[k], dayNotes = day.notes || {}, cd = day.clearday || {};
         var written = day.beings.filter(function (b) { return dayNotes[b]; });
         html += '<li><p class="when">' + esc(fmt(k, { weekday: "long", day: "numeric", month: "long" })) +
           (k === todayKey ? "<b>היום</b>" : "") + "</p>";
-        if (!written.length) {
+        if (!day.beings.length) {
+          html += '<p class="what quiet">לא נבחרו הוויות ביום הזה</p>';
+        } else if (!written.length) {
           html += '<p class="what">' + esc(day.beings.join(", ")) + "</p>";
         } else {
           html += day.beings.map(function (b) {
             return '<p class="what">' + esc(b) + "</p>" +
               (dayNotes[b] ? '<p class="said">' + esc(dayNotes[b]) + "</p>" : "");
           }).join("");
+        }
+        // the answers sit folded, so a month of days still reads at a glance
+        var answered = QUESTIONS.filter(function (q) { return !q.beings && cd[q.id]; });
+        if (answered.length) {
+          var open = !!state.openDays[k];
+          html += '<button type="button" class="cd-more" data-act="cd-toggle" data-day="' + k +
+            '" aria-expanded="' + open + '">Clearday, ' +
+            (answered.length === 1 ? "תשובה אחת" : answered.length + " תשובות") + "</button>";
+          if (open) {
+            html += '<div class="cd-read">' + answered.map(function (q) {
+              return '<p class="cd-rq">' + esc(ask(q)) + '</p><p class="said">' + esc(cd[q.id]) + "</p>";
+            }).join("") + "</div>";
+          }
         }
         html += "</li>";
       });
@@ -1427,6 +1650,16 @@ window.Havayot = {
       case "gender": return setGender(t2.dataset.gender);
       case "theme": return setTheme(t2.dataset.theme);
       case "marks": return setMarks(t2.dataset.marks === "on");
+      case "go-beings":
+        state.view = "today";
+        var d = state.days[dayKey()];
+        if (d && d.beings.length) startEdit();
+        else { state.editing = false; render(); }
+        return;
+      case "cd-toggle":
+        state.openDays[t2.dataset.day] = !state.openDays[t2.dataset.day];
+        render(true);
+        return;
       case "auth-google": return authGoogle();
       case "auth-go": return authSubmit();
       case "auth-reset": return authReset();
@@ -1450,6 +1683,12 @@ window.Havayot = {
         return;
     }
   });
+  app.addEventListener("input", function (ev) {
+    var box = ev.target;
+    if (!box.classList || !box.classList.contains("cd-box")) return;
+    grow(box);
+    cdType(box.dataset.q, box.value);
+  });
   app.addEventListener("keydown", function (ev) {
     if (ev.target.classList.contains("note-input") && ev.key === "Escape") { ev.preventDefault(); closeNote(); }
     if (ev.target.classList.contains("input") && ev.key === "Enter") { ev.preventDefault(); authSubmit(); }
@@ -1470,9 +1709,11 @@ window.Havayot = {
     var k = dayKey();
     if (k === lastKey) return;
     lastKey = k;
+    cdFlush();
     state.picks = emptyPicks();
     state.editing = false;
     state.noteFor = null;
+    state.openDays = {};
     state.view = "today";
     render(true);
   }
@@ -1602,6 +1843,7 @@ window.Havayot = {
             date: key,
             beings: day.beings.slice(),
             notes: day.notes || {},
+            clearday: day.clearday || {},
             savedAt: day.savedAt || new Date().toISOString()
           }).catch(say);
         },
