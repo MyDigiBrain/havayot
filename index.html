@@ -703,6 +703,13 @@ window.Havayot = {
     return picks;
   }
   function picked() { return state.picks.filter(Boolean); }
+  function isBreath(name) { return name === LIST.m[BREATH] || name === LIST.f[BREATH]; }
+  function breathFirst(list) {         // it leads the day, so it leads every list
+    var at = -1;
+    list.forEach(function (b, i) { if (at < 0 && isBreath(b)) at = i; });
+    if (at > 0) { var out = list.slice(); out.unshift(out.splice(at, 1)[0]); return out; }
+    return list;
+  }
   function normalize(v) {
     if (!v || typeof v !== "object") return null;
     var list = Array.isArray(v.beings)
@@ -724,7 +731,7 @@ window.Havayot = {
     }
     // a day exists once it holds either a choice of beings or a written answer
     if (!list.length && !Object.keys(cd).length) return null;
-    return { beings: list, notes: notes, clearday: cd, savedAt: typeof v.savedAt === "string" ? v.savedAt : "" };
+    return { beings: breathFirst(list), notes: notes, clearday: cd, savedAt: typeof v.savedAt === "string" ? v.savedAt : "" };
   }
 
   /* ---------- the log and the settings live in this browser ---------- */
@@ -840,7 +847,12 @@ window.Havayot = {
     else {
       var free = state.picks.indexOf(null);
       if (free < 0) return;
-      state.picks[free] = name;
+      if (isBreath(name) && free !== 0) {     // the breathing being belongs in the first slot
+        state.picks[free] = state.picks[0];
+        state.picks[0] = name;
+      } else {
+        state.picks[free] = name;
+      }
     }
     updateChoose();
   }
@@ -850,7 +862,7 @@ window.Havayot = {
     var key = dayKey();
     var prev = state.days[key], kept = {};
     if (prev && prev.notes) list.forEach(function (b) { if (prev.notes[b]) kept[b] = prev.notes[b]; });
-    state.days[key] = { beings: list, notes: kept, clearday: (prev && prev.clearday) || {}, savedAt: new Date().toISOString() };
+    state.days[key] = { beings: breathFirst(list), notes: kept, clearday: (prev && prev.clearday) || {}, savedAt: new Date().toISOString() };
     saveDays(key);
     state.picks = emptyPicks();
     state.editing = false;
@@ -860,7 +872,7 @@ window.Havayot = {
     var today = state.days[dayKey()];
     state.picks = emptyPicks();
     if (today) {
-      today.beings.slice(0, MAX).forEach(function (b, i) {   // every being keeps the tone it has today
+      breathFirst(today.beings).slice(0, MAX).forEach(function (b, i) {   // every being keeps the tone it has today
         if (beings().indexOf(b) >= 0) state.picks[i] = b;
       });
     }
