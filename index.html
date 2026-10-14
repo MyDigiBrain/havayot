@@ -704,6 +704,10 @@ window.Havayot = {
   }
   function picked() { return state.picks.filter(Boolean); }
   function isBreath(name) { return name === LIST.m[BREATH] || name === LIST.f[BREATH]; }
+  function chipOrder() {               // the list to choose from: the breathing being, then the rest in order
+    var all = beings();
+    return [all[BREATH]].concat(all.filter(function (b, i) { return i !== BREATH; }));
+  }
   function breathFirst(list) {         // it leads the day, so it leads every list
     var at = -1;
     list.forEach(function (b, i) { if (at < 0 && isBreath(b)) at = i; });
@@ -1230,7 +1234,7 @@ window.Havayot = {
       '<p class="lede">' + esc(fmt(key, { weekday: "long", day: "numeric", month: "long" })) + esc(t().lede) + "</p>" +
       guide +
       '<ul class="field">' +
-      beings().map(function (b, i) {
+      chipOrder().map(function (b, i) {
         return '<li><button type="button" class="being" style="--i:' + (i % 12) +
           '" aria-pressed="false" data-being="' + esc(b) + '">' + esc(b) + markSvg(b) + "</button></li>";
       }).join("") +
